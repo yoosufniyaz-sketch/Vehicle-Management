@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDC Vehicle Management</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --ink:#101826; --steel:#56637a; --steel-soft:#8b96a8;
+    --paper:#eef0ee; --surface:#ffffff; --surface-2:#f5f6f4;
+    --line:#dbe0de; --line-strong:#c4cac7;
+    --accent:#14406b; --accent-strong:#0d2f4e; --accent-soft:#e6ecf1;
+    --good:#2f8f5b; --good-soft:#e6f4ec;
+    --warn:#a9760a; --warn-soft:#fbf1dd;
+    --critical:#b3261e; --critical-soft:#fbe9e7;
+    --shadow: 0 1px 2px rgba(16,24,38,.06), 0 8px 24px -12px rgba(16,24,38,.18);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#eef1f5; --steel:#a7b1c2; --steel-soft:#7c879b;
+      --paper:#0f1520; --surface:#161d29; --surface-2:#1c2432;
+      --line:#2a3242; --line-strong:#3a4356;
+      --accent:#6f9cc9; --accent-strong:#8fb3d9; --accent-soft:#1c2c3c;
+      --good:#5cbd85; --good-soft:#123425;
+      --warn:#d9a740; --warn-soft:#3a2e10;
+      --critical:#e5766c; --critical-soft:#3a1613;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#eef1f5; --steel:#a7b1c2; --steel-soft:#7c879b;
+    --paper:#0f1520; --surface:#161d29; --surface-2:#1c2432;
+    --line:#2a3242; --line-strong:#3a4356;
+    --accent:#6f9cc9; --accent-strong:#8fb3d9; --accent-soft:#1c2c3c;
+    --good:#5cbd85; --good-soft:#123425;
+    --warn:#d9a740; --warn-soft:#3a2e10;
+    --critical:#e5766c; --critical-soft:#3a1613;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:"IBM Plex Sans",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:"Oswald",system-ui,sans-serif; font-weight:600; letter-spacing:.01em; margin:0; text-wrap:balance; }
+  .num{ font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+  a{ color:var(--accent); }
+  button{ font-family:inherit; }
+
+  .shell{ display:grid; grid-template-columns:220px 1fr; min-height:100vh; }
+  .sidebar{
+    background:var(--surface); border-right:1px solid var(--line);
+    padding:20px 14px; display:flex; flex-direction:column; gap:22px;
+    position:sticky; top:0; height:100vh;
+  }
+  .brand{ display:flex; flex-direction:column; gap:2px; padding:0 6px; }
+  .brand .mark{ font-family:"Oswald"; font-weight:700; font-size:18px; letter-spacing:.03em; text-transform:uppercase; color:var(--accent-strong); }
+  .brand .sub{ font-size:11px; color:var(--steel); letter-spacing:.04em; text-transform:uppercase; }
+  .nav{ display:flex; flex-direction:column; gap:2px; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px;
+    color:var(--steel); font-size:14px; font-weight:500; cursor:pointer; border:none; background:none; text-align:left; width:100%;
+  }
+  .nav-item .ic{ width:18px; height:18px; flex:none; display:flex; align-items:center; justify-content:center; }
+  .nav-item:hover{ background:var(--surface-2); color:var(--ink); }
+  .nav-item.active{ background:var(--accent-soft); color:var(--accent-strong); font-weight:600; }
+  .nav-count{ margin-left:auto; font-family:"IBM Plex Mono"; font-size:11px; color:var(--steel-soft); }
+  .sidebar-foot{ margin-top:auto; font-size:11px; color:var(--steel-soft); padding:0 6px; line-height:1.5; }
+
+  .main{ min-width:0; display:flex; flex-direction:column; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:16px 28px; border-bottom:1px solid var(--line); background:var(--surface);
+    position:sticky; top:0; z-index:5;
+  }
+  .topbar h1{ font-size:20px; }
+  .topbar .meta{ font-size:12px; color:var(--steel); margin-top:2px; }
+  .content{ padding:24px 28px 60px; flex:1; }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; border-radius:8px; border:1px solid transparent;
+    padding:9px 14px; font-size:13.5px; font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-primary:hover{ background:var(--accent-strong); }
+  .btn-primary:disabled{ background:var(--steel-soft); cursor:not-allowed; }
+  .btn-ghost{ background:transparent; border-color:var(--line-strong); color:var(--ink); }
+  .btn-ghost:hover{ background:var(--surface-2); }
+  .btn-sm{ padding:6px 10px; font-size:12.5px; border-radius:7px; }
+  .btn-danger{ background:transparent; color:var(--critical); border-color:var(--critical); }
+  .btn-danger:hover{ background:var(--critical-soft); }
+  .btn-icon{ padding:6px 8px; }
+  .link-btn{ background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; font-weight:600; padding:0; }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+  .stat-tile{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); }
+  .stat-tile .n{ font-family:"IBM Plex Mono"; font-size:28px; font-weight:600; line-height:1; }
+  .stat-tile .l{ font-size:12.5px; color:var(--steel); margin-top:8px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  .stat-tile .d{ font-size:12px; color:var(--steel-soft); margin-top:2px; }
+
+  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); margin-bottom:20px; overflow:hidden; }
+  .panel-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:16px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .panel-head h2{ font-size:16px; }
+  .panel-body{ padding:16px 18px; }
+  .panel-filters{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+  select, input[type=text], input[type=number], input[type=date], textarea{
+    font-family:inherit; font-size:13.5px; color:var(--ink); background:var(--surface);
+    border:1px solid var(--line-strong); border-radius:7px; padding:8px 10px; width:100%;
+  }
+  select:focus, input:focus, textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  label{ font-size:12.5px; font-weight:600; color:var(--steel); display:block; margin-bottom:5px; }
+  .field{ margin-bottom:14px; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  textarea{ resize:vertical; min-height:64px; }
+  .hint{ font-size:11.5px; color:var(--steel-soft); margin-top:4px; }
+  .req::after{ content:" *"; color:var(--critical); }
+
+  .table-wrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); padding:8px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  td{ padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tbody tr:hover{ background:var(--surface-2); }
+  tr.clickable{ cursor:pointer; }
+  .plate{ font-family:"IBM Plex Mono"; font-weight:600; background:var(--surface-2); border:1px solid var(--line-strong); border-radius:5px; padding:2px 7px; display:inline-block; }
+  .row-actions{ display:flex; gap:6px; justify-content:flex-end; }
+  .muted{ color:var(--steel-soft); }
+
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:99px; white-space:nowrap; }
+  .pill-good{ background:var(--good-soft); color:var(--good); }
+  .pill-warn{ background:var(--warn-soft); color:var(--warn); }
+  .pill-critical{ background:var(--critical-soft); color:var(--critical); }
+  .pill-steel{ background:var(--surface-2); color:var(--steel); border:1px solid var(--line-strong); }
+
+  .empty{ padding:34px 18px; text-align:center; color:var(--steel); }
+  .empty .big{ font-size:14px; margin-bottom:10px; }
+
+  .detail-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; padding:18px 18px 20px; }
+  .detail-id h1{ font-size:24px; }
+  .detail-id .plate{ font-size:15px; margin-top:6px; }
+  .detail-tags{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .kv-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; padding:0 18px 18px; }
+  .kv-grid .kv .l{ font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--steel-soft); font-weight:600; }
+  .kv-grid .kv .v{ font-size:15px; margin-top:3px; }
+  .back-link{ display:inline-flex; align-items:center; gap:6px; color:var(--steel); background:none; border:none; cursor:pointer; font-size:13px; font-weight:600; margin-bottom:14px; padding:0; }
+  .back-link:hover{ color:var(--ink); }
+  .note-block{ padding:0 18px 18px; }
+  .note-block .l{ font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--steel-soft); font-weight:600; margin-bottom:6px; }
+  .note-block .txt{ font-size:13.5px; line-height:1.5; white-space:pre-wrap; }
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(10,14,20,.5); display:flex; align-items:flex-start; justify-content:center; padding:5vh 16px; overflow-y:auto; z-index:50; }
+  .modal{ background:var(--surface); border-radius:14px; width:100%; max-width:520px; box-shadow:0 20px 60px -20px rgba(0,0,0,.4); }
+  .modal-head{ display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); }
+  .modal-head h2{ font-size:16px; }
+  .modal-close{ background:none; border:none; cursor:pointer; color:var(--steel); font-size:18px; line-height:1; padding:4px; }
+  .modal-body{ padding:18px 20px; max-height:70vh; overflow-y:auto; }
+  .modal-foot{ display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid var(--line); }
+
+  .file-row{ display:flex; align-items:center; gap:8px; border:1px dashed var(--line-strong); border-radius:8px; padding:8px 10px; font-size:12.5px; }
+  .file-row .name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .file-status{ font-size:12px; color:var(--steel); margin-top:6px; }
+
+  .toast-layer{ position:fixed; bottom:18px; right:18px; display:flex; flex-direction:column; gap:8px; z-index:100; }
+  .toast{ background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:8px; font-size:13px; box-shadow:var(--shadow); max-width:320px; }
+
+  .loading-shell{ display:flex; align-items:center; justify-content:center; height:100vh; color:var(--steel); font-size:14px; text-align:center; padding:20px; }
+
+  @media (max-width: 760px){
+    .shell{ grid-template-columns:1fr; }
+    .sidebar{ position:sticky; top:0; height:auto; flex-direction:row; align-items:center; overflow-x:auto; padding:10px 12px; gap:14px; z-index:10; }
+    .brand{ display:none; }
+    .nav{ flex-direction:row; }
+    .nav-item{ width:auto; }
+    .nav-count{ display:none; }
+    .sidebar-foot{ display:none; }
+    .topbar{ padding:14px 16px; }
+    .content{ padding:16px 16px 50px; }
+    .stat-grid{ grid-template-columns:1fr 1fr; }
+    .field-row{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app"><div class="loading-shell">Loading fleet records…</div></div>
+<div id="modalLayer"></div>
+<div class="toast-layer" id="toastLayer"></div>
+
+<!-- Firebase (free tier, long-lived public config — nothing here expires or needs renewal) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<!-- firebase-storage-compat.js: add this back once file storage (Blaze plan) is enabled -->
+
+
+<script>
+  // ---- Firebase project configuration ----
+  // This is a PUBLIC client config (not a secret token) — it identifies which
+  // Firebase project to talk to. Access is controlled by Firestore/Storage
+  // security rules, not by hiding this object. It never expires.
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCj0m27rYwINI2ZO1APNgu3-8Lu1liol_o",
+    authDomain: "fdc-vehicle-management.firebaseapp.com",
+    projectId: "fdc-vehicle-management",
+    storageBucket: "fdc-vehicle-management.firebasestorage.app",
+    messagingSenderId: "681628225367",
+    appId: "1:681628225367:web:b4cdc4866bd08a31487812"
+  };
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  var NAV = [
+    { key:'dashboard', label:'Dashboard', icon:'&#9673;' },
+    { key:'vehicles', label:'Vehicles', icon:'&#9632;' },
+    { key:'servicing', label:'Servicing', icon:'&#9881;' },
+    { key:'fueling', label:'Fueling', icon:'&#9679;' }
+  ];
+  var VEHICLE_TYPES = ['Sedan','SUV','Pickup','Van','Bus / Coaster','Truck','Motorcycle','Other'];
+  var SERVICE_TYPES = ['Routine Maintenance','Oil Change','Tire Service','Inspection','Battery','Repair','Other'];
+  var FUEL_TYPES = ['Petrol','Diesel','Electric (Charge)','Other'];
+
+  var state = {
+    tab: 'dashboard',
+    detailVehicleId: null,
+    vehicles: new Map(),
+    services: new Map(),
+    fuels: new Map(),
+    ready: { vehicles:false, services:false, fuels:false },
+    db: null, assets: null,
+    myId: null,
+    filters: { vehicleSearch:'', svcVehicle:'', fuelVehicle:'', fuelStatus:'all' }
+  };
+  var fuelModalState = { po:null, delivery:null, existingPo:null, existingDelivery:null };
+
+  // ---------- utils ----------
+  function $(sel, root){ return (root||document).querySelector(sel); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function fmtDate(iso){
+    if(!iso) return '—';
+    var d = new Date(iso + 'T00:00:00');
+    if(isNaN(d.getTime())) return esc(iso);
+    return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
+  }
+  function fmtMoney(n){
+    if(n===null||n===undefined||n==='') return '—';
+    var num = Number(n);
+    if(isNaN(num)) return '—';
+    return 'Rf ' + num.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function fmtNum(n, unit){
+    if(n===null||n===undefined||n==='') return '—';
+    var num = Number(n);
+    if(isNaN(num)) return '—';
+    return num.toLocaleString() + (unit? ' '+unit : '');
+  }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function toast(msg){
+    var layer = $('#toastLayer');
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    layer.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 4200);
+  }
+
+  function vehiclesSorted(){
+    return Array.from(state.vehicles.values()).sort(function(a,b){ return (a.plate||'').localeCompare(b.plate||''); });
+  }
+  function vehicleById(id){ return state.vehicles.get(id); }
+  function vehicleLabel(v){
+    if(!v) return 'Unknown vehicle';
+    return (v.plate||'—') + (v.make||v.model? ' · '+[v.make,v.model].filter(Boolean).join(' ') : '');
+  }
+  function servicesForVehicle(id){
+    return Array.from(state.services.values()).filter(function(s){ return s.vehicleId===id; })
+      .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  }
+  function fuelsForVehicle(id){
+    return Array.from(state.fuels.values()).filter(function(f){ return f.vehicleId===id; })
+      .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  }
+
+  function vehiclePill(status){
+    var map = { active:['Active','good'], service:['In Service','warn'], inactive:['Inactive','steel'] };
+    var m = map[status] || ['Unset','steel'];
+    return '<span class="pill pill-'+m[1]+'">'+m[0]+'</span>';
+  }
+  function conditionPill(c){
+    var map = { good:['Good','good'], fair:['Fair','warn'], poor:['Poor','critical'] };
+    var m = map[c] || ['Unrated','steel'];
+    return '<span class="pill pill-'+m[1]+'">'+m[0]+'</span>';
+  }
+  function fuelStatusPill(status){
+    return status==='closed' ? '<span class="pill pill-good">Closed</span>' : '<span class="pill pill-warn">Open</span>';
+  }
+
+  // ---------- local identity (no login system — just a display name) ----------
+  function getMyName(){
+    try{
+      var name = localStorage.getItem('fdc_name');
+      if(!name){
+        name = (window.prompt('Your name (shown as "added by" on records you create):') || '').trim() || 'Team member';
+        localStorage.setItem('fdc_name', name);
+      }
+      return name;
+    }catch(e){ return 'Team member'; }
+  }
+  function nameFor(id){
+    if(!id) return '—';
+    if(id === state.myId) return 'You';
+    return id;
+  }
+
+  // ---------- Firebase boot ----------
+  function makeAssets(storage){
+    return {
+      upload: async function(file){
+        var safeName = (file.name||'file').replace(/[^a-zA-Z0-9_.-]/g,'_');
+        var path = 'uploads/' + Date.now() + '_' + Math.random().toString(36).slice(2,8) + '_' + safeName;
+        var ref = storage.ref().child(path);
+        var snap = await ref.put(file);
+        var url = await snap.ref.getDownloadURL();
+        return { id: path, url: url, sizeBytes: file.size, contentType: file.type };
+      },
+      delete: async function(path){
+        try{ await storage.ref(path).delete(); }catch(e){}
+        return { deleted: true };
+      }
+    };
+  }
+
+  async function boot(){
+    if(!FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey.indexOf('REPLACE') === 0){
+      renderFatal('This page has not been connected to a data backend yet. Set FIREBASE_CONFIG near the top of the file.');
+      return;
+    }
+    try{
+      firebase.initializeApp(FIREBASE_CONFIG);
+      // Security rules require a signed-in request. There is no login screen —
+      // every visitor is signed in silently (anonymous auth) so the shared
+      // fleet data isn't reachable by anyone who never opened this page.
+      await firebase.auth().signInAnonymously();
+      state.db = firebase.firestore();
+      // File storage is not enabled for this project yet (it needs a billing
+      // account attached on Firebase's side). PO / delivery-note fields fall
+      // back to a plain text reference below until that's turned on.
+      state.assets = null;
+    }catch(e){
+      renderFatal('Could not connect to the data backend: ' + (e && e.message ? e.message : e));
+      return;
+    }
+    state.myId = getMyName();
+    subscribeAll();
+    renderApp();
+  }
+
+  function subscribeAll(){
+    state.db.collection('vehicles').onSnapshot(function(snap){
+      var m = new Map();
+      snap.docs.forEach(function(d){ m.set(d.id, Object.assign({id:d.id}, d.data())); });
+      state.vehicles = m; state.ready.vehicles = true;
+      renderApp();
+    }, function(err){ handleSnapError('vehicle', err); });
+
+    state.db.collection('service_records').onSnapshot(function(snap){
+      var m = new Map();
+      snap.docs.forEach(function(d){ m.set(d.id, Object.assign({id:d.id}, d.data())); });
+      state.services = m; state.ready.services = true;
+      renderApp();
+    }, function(err){ handleSnapError('service', err); });
+
+    state.db.collection('fuel_records').onSnapshot(function(snap){
+      var m = new Map();
+      snap.docs.forEach(function(d){ m.set(d.id, Object.assign({id:d.id}, d.data())); });
+      state.fuels = m; state.ready.fuels = true;
+      renderApp();
+    }, function(err){ handleSnapError('fuel', err); });
+  }
+
+  function handleSnapError(kind, err){
+    console.error(kind, err);
+    toast('Could not load ' + kind + ' data: ' + (err && err.message ? err.message : 'check your connection.'));
+  }
+
+  async function withWrite(fn, okMsg){
+    try{
+      await fn();
+      if(okMsg) toast(okMsg);
+      return true;
+    }catch(e){
+      console.error(e);
+      toast('Something went wrong saving: ' + (e && e.message ? e.message : 'please try again.'));
+      return false;
+    }
+  }
+
+  function writeLocked(){ return false; }
+
+  // ---------- CRUD ----------
+  function createVehicle(data){
+    var ref = state.db.collection('vehicles').doc();
+    var now = new Date().toISOString();
+    return withWrite(function(){
+      return ref.set(Object.assign({}, data, { createdAt: now, updatedAt: now, createdBy: state.myId }));
+    }, 'Vehicle added.');
+  }
+  function updateVehicle(id, data){
+    return withWrite(function(){
+      return state.db.doc('vehicles/'+id).update(Object.assign({}, data, { updatedAt: new Date().toISOString() }));
+    }, 'Vehicle updated.');
+  }
+  function deleteVehicle(id){
+    return withWrite(function(){ return state.db.doc('vehicles/'+id).delete(); }, 'Vehicle removed.');
+  }
+  function createService(data){
+    var now = new Date().toISOString();
+    return withWrite(function(){
+      return state.db.collection('service_records').add(Object.assign({}, data, { createdAt: now, createdBy: state.myId }));
+    }, 'Service record saved.');
+  }
+  function updateService(id, data){
+    return withWrite(function(){
+      return state.db.doc('service_records/'+id).update(data);
+    }, 'Service record updated.');
+  }
+  function deleteService(id){
+    return withWrite(function(){ return state.db.doc('service_records/'+id).delete(); }, 'Service record deleted.');
+  }
+  function createFuel(data){
+    var now = new Date().toISOString();
+    return withWrite(function(){
+      return state.db.collection('fuel_records').add(Object.assign({}, data, { createdAt: now, createdBy: state.myId }));
+    }, 'Fueling record saved.');
+  }
+  function updateFuel(id, data){
+    return withWrite(function(){
+      return state.db.doc('fuel_records/'+id).update(Object.assign({}, data, { updatedAt: new Date().toISOString() }));
+    }, 'Fueling record updated.');
+  }
+  function deleteFuel(id){
+    return withWrite(function(){ return state.db.doc('fuel_records/'+id).delete(); }, 'Fueling record deleted.');
+  }
+
+  async function uploadFile(file){
+    if(!state.assets || !file) return null;
+    try{
+      var res = await state.assets.upload(file);
+      return { id: res.id, url: res.url, name: file.name };
+    }catch(e){
+      toast('Upload failed: ' + (e && e.message ? e.message : 'please try again.'));
+      return null;
+    }
+  }
+  function deleteAssetSafe(id){
+    if(!state.assets || !id) return;
+    state.assets.delete(id).catch(function(){});
+  }
+
+  // ---------- rendering: shell ----------
+  function renderFatal(msg){
+    $('#app').innerHTML = '<div class="loading-shell">'+esc(msg)+'</div>';
+  }
+
+  function renderApp(){
+    var app = $('#app');
+    app.innerHTML =
+      '<div class="shell">' +
+        '<aside class="sidebar">' +
+          '<div class="brand"><div class="mark">FDC Fleet</div><div class="sub">Vehicle Management</div></div>' +
+          '<nav class="nav">' + NAV.map(navItem).join('') + '</nav>' +
+          '<div class="sidebar-foot">Corporate vehicle logs &amp; documents<br>Data syncs live for everyone with access.</div>' +
+        '</aside>' +
+        '<div class="main">' +
+          '<header class="topbar">' +
+            '<div><h1>'+ topbarTitle() +'</h1>' + (topbarMeta() ? '<div class="meta">'+topbarMeta()+'</div>' : '') + '</div>' +
+            topbarAction() +
+          '</header>' +
+          '<div class="content" id="content">' + renderContent() + '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function navItem(item){
+    var active = state.tab === item.key;
+    var count = '';
+    if(item.key==='vehicles') count = state.vehicles.size;
+    if(item.key==='servicing') count = state.services.size;
+    if(item.key==='fueling') count = state.fuels.size;
+    return '<button class="nav-item'+(active?' active':'')+'" data-action="nav" data-tab="'+item.key+'">' +
+      '<span class="ic">'+item.icon+'</span><span>'+item.label+'</span>' +
+      (count!=='' ? '<span class="nav-count">'+count+'</span>' : '') +
+    '</button>';
+  }
+
+  function topbarTitle(){
+    if(state.tab==='vehicles' && state.detailVehicleId){
+      var v = vehicleById(state.detailVehicleId);
+      return v ? 'Vehicle detail' : 'Vehicle';
+    }
+    var found = NAV.filter(function(n){ return n.key===state.tab; })[0];
+    return found ? found.label : 'Dashboard';
+  }
+  function topbarMeta(){
+    if(state.tab==='dashboard') return 'Fleet-wide status at a glance';
+    if(state.tab==='vehicles' && !state.detailVehicleId) return 'All corporate vehicles on record';
+    if(state.tab==='servicing') return 'Service requirements and history across the fleet';
+    if(state.tab==='fueling') return 'Fuel purchase orders and delivery notes';
+    return '';
+  }
+  function topbarAction(){
+    if(state.tab==='dashboard' || (state.tab==='vehicles' && !state.detailVehicleId)){
+      return '<button class="btn btn-primary" data-action="add-vehicle">+ Add vehicle</button>';
+    }
+    if(state.tab==='servicing'){
+      return '<button class="btn btn-primary" data-action="add-service"'+(state.vehicles.size?'':' disabled')+'>+ Add service</button>';
+    }
+    if(state.tab==='fueling'){
+      return '<button class="btn btn-primary" data-action="add-fuel"'+(state.vehicles.size?'':' disabled')+'>+ Add fueling</button>';
+    }
+    return '';
+  }
+
+  function renderContent(){
+    if(!state.ready.vehicles || !state.ready.services || !state.ready.fuels){
+      return '<div class="empty">Loading fleet records…</div>';
+    }
+    if(state.tab==='vehicles' && state.detailVehicleId) return renderVehicleDetail(state.detailVehicleId);
+    if(state.tab==='vehicles') return renderVehicles();
+    if(state.tab==='servicing') return renderServicing();
+    if(state.tab==='fueling') return renderFueling();
+    return renderDashboard();
+  }
+
+  // ---------- dashboard ----------
+  function renderDashboard(){
+    var vehicles = vehiclesSorted();
+    var total = vehicles.length;
+    var active = vehicles.filter(function(v){ return v.status==='active'; }).length;
+    var inService = vehicles.filter(function(v){ return v.status==='service'; }).length;
+    var openFuel = Array.from(state.fuels.values()).filter(function(f){ return f.status!=='closed'; }).length;
+    var attention = vehicles.filter(function(v){ return v.condition==='poor' || v.status==='service'; });
+
+    var html = '<div class="stat-grid">' +
+      statTile(total, 'Fleet size', 'Vehicles on record') +
+      statTile(active, 'Active', 'Ready for use') +
+      statTile(inService, 'In service', 'Currently workshop-bound') +
+      statTile(openFuel, 'Open fuel POs', 'Awaiting delivery note') +
+      '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h2>Needs attention</h2></div>' +
+      (attention.length ? '<div class="table-wrap">'+vehicleTable(attention)+'</div>' : emptyState('Nothing needs attention right now.')) +
+      '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h2>Fleet overview</h2>' +
+      (total ? '<button class="link-btn" data-action="nav" data-tab="vehicles">View all vehicles &rarr;</button>' : '') +
+      '</div>' +
+      (total ? '<div class="table-wrap">'+vehicleTable(vehicles.slice(0,8))+'</div>' :
+        emptyState('No vehicles yet. Add your first corporate vehicle to get started.', true)) +
+      '</div>';
+
+    return html;
+  }
+
+  function statTile(n, label, desc){
+    return '<div class="stat-tile"><div class="n num">'+n+'</div><div class="l">'+esc(label)+'</div><div class="d">'+esc(desc)+'</div></div>';
+  }
+  function emptyState(msg, showAdd){
+    return '<div class="empty"><div class="big">'+esc(msg)+'</div>' +
+      (showAdd ? '<button class="btn btn-primary btn-sm" data-action="add-vehicle">+ Add vehicle</button>' : '') +
+      '</div>';
+  }
+
+  function vehicleTable(list){
+    var rows = list.map(function(v){
+      return '<tr class="clickable" data-action="open-vehicle" data-id="'+v.id+'">' +
+        '<td><span class="plate">'+esc(v.plate||'—')+'</span></td>' +
+        '<td>'+esc([v.make,v.model].filter(Boolean).join(' ')||'—')+(v.year?' <span class="muted">('+esc(v.year)+')</span>':'')+'</td>' +
+        '<td class="muted">'+esc(v.type||'—')+'</td>' +
+        '<td>'+vehiclePill(v.status)+'</td>' +
+        '<td>'+conditionPill(v.condition)+'</td>' +
+        '<td class="num">'+fmtNum(v.mileage,'km')+'</td>' +
+        '<td class="muted">'+esc(v.assignedTo||'—')+'</td>' +
+      '</tr>';
+    }).join('');
+    return '<table><thead><tr><th>Plate</th><th>Vehicle</th><th>Type</th><th>Status</th><th>Condition</th><th>Mileage</th><th>Assigned to</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+
+  // ---------- vehicles list ----------
+  function renderVehicles(){
+    var q = state.filters.vehicleSearch.trim().toLowerCase();
+    var list = vehiclesSorted().filter(function(v){
+      if(!q) return true;
+      return [v.plate,v.make,v.model,v.assignedTo].filter(Boolean).join(' ').toLowerCase().indexOf(q) !== -1;
+    });
+    var html = '<div class="panel">' +
+      '<div class="panel-head"><h2>All vehicles</h2>' +
+      '<div class="panel-filters"><input type="text" id="vehicleSearch" placeholder="Search plate, make, model, driver…" value="'+esc(state.filters.vehicleSearch)+'" style="width:240px"></div>' +
+      '</div>';
+    if(!list.length){
+      html += emptyState(state.vehicles.size ? 'No vehicles match your search.' : 'No vehicles yet. Add your first corporate vehicle to get started.', !state.vehicles.size);
+    } else {
+      html += '<div class="table-wrap"><table><thead><tr><th>Plate</th><th>Vehicle</th><th>Type</th><th>Status</th><th>Condition</th><th>Mileage</th><th>Assigned to</th><th></th></tr></thead><tbody>' +
+        list.map(function(v){
+          return '<tr class="clickable" data-action="open-vehicle" data-id="'+v.id+'">' +
+            '<td><span class="plate">'+esc(v.plate||'—')+'</span></td>' +
+            '<td>'+esc([v.make,v.model].filter(Boolean).join(' ')||'—')+(v.year?' <span class="muted">('+esc(v.year)+')</span>':'')+'</td>' +
+            '<td class="muted">'+esc(v.type||'—')+'</td>' +
+            '<td>'+vehiclePill(v.status)+'</td>' +
+            '<td>'+conditionPill(v.condition)+'</td>' +
+            '<td class="num">'+fmtNum(v.mileage,'km')+'</td>' +
+            '<td class="muted">'+esc(v.assignedTo||'—')+'</td>' +
+            '<td><div class="row-actions">' +
+              '<button class="btn btn-ghost btn-sm" data-action="edit-vehicle" data-id="'+v.id+'">Edit</button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // ---------- vehicle detail ----------
+  function renderVehicleDetail(id){
+    var v = vehicleById(id);
+    if(!v){
+      return '<button class="back-link" data-action="back-to-vehicles">&larr; Back to vehicles</button>' + emptyState('This vehicle no longer exists.');
+    }
+    var svc = servicesForVehicle(id);
+    var fuel = fuelsForVehicle(id);
+
+    var html = '<button class="back-link" data-action="back-to-vehicles">&larr; Back to vehicles</button>';
+    html += '<div class="panel">' +
+      '<div class="detail-head">' +
+        '<div class="detail-id">' +
+          '<h1>'+esc([v.make,v.model].filter(Boolean).join(' ')||'Unnamed vehicle')+(v.year?' <span class="muted">'+esc(v.year)+'</span>':'')+'</h1>' +
+          '<div class="plate">'+esc(v.plate||'—')+'</div>' +
+          '<div class="detail-tags">'+vehiclePill(v.status)+conditionPill(v.condition)+'<span class="pill pill-steel">'+esc(v.type||'Type unset')+'</span></div>' +
+        '</div>' +
+        '<div><button class="btn btn-ghost btn-sm" data-action="edit-vehicle" data-id="'+v.id+'">Edit vehicle</button> ' +
+          '<button class="btn btn-danger btn-sm" data-action="delete-vehicle" data-id="'+v.id+'">Remove</button></div>' +
+      '</div>' +
+      '<div class="kv-grid">' +
+        kv('Mileage', fmtNum(v.mileage,'km')) +
+        kv('Assigned to', v.assignedTo||'—') +
+        kv('Added by', nameFor(v.createdBy)) +
+        kv('Added on', v.createdAt ? new Date(v.createdAt).toLocaleDateString() : '—') +
+      '</div>' +
+      '<div class="note-block"><div class="l">Service requirement</div><div class="txt">'+esc(v.serviceRequirement||'No service requirement noted yet.')+'</div></div>' +
+      '<div class="note-block" style="padding-top:0"><div class="l">Condition notes</div><div class="txt">'+esc(v.notes||'No condition notes yet.')+'</div></div>' +
+    '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h2>Servicing history</h2>' +
+      '<button class="btn btn-primary btn-sm" data-action="add-service" data-vehicle="'+id+'">+ Add service</button>' +
+      '</div>' +
+      (svc.length ? '<div class="table-wrap">'+serviceTable(svc,false)+'</div>' : emptyState('No service records yet for this vehicle.')) +
+    '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h2>Fueling history</h2>' +
+      '<button class="btn btn-primary btn-sm" data-action="add-fuel" data-vehicle="'+id+'">+ Add fueling</button>' +
+      '</div>' +
+      (fuel.length ? '<div class="table-wrap">'+fuelTable(fuel,false)+'</div>' : emptyState('No fueling records yet for this vehicle.')) +
+    '</div>';
+
+    return html;
+  }
+  function kv(l,v){ return '<div class="kv"><div class="l">'+esc(l)+'</div><div class="v">'+esc(v)+'</div></div>'; }
+
+  // ---------- servicing ----------
+  function serviceTable(list, showVehicle){
+    var rows = list.map(function(s){
+      var v = vehicleById(s.vehicleId);
+      return '<tr>' +
+        '<td class="num">'+fmtDate(s.date)+'</td>' +
+        (showVehicle ? '<td>'+esc(vehicleLabel(v))+'</td>' : '') +
+        '<td>'+esc(s.type||'—')+'</td>' +
+        '<td class="muted">'+esc(s.description||'—')+'</td>' +
+        '<td class="num">'+fmtNum(s.odometer,'km')+'</td>' +
+        '<td class="num">'+fmtMoney(s.cost)+'</td>' +
+        '<td><div class="row-actions">' +
+          '<button class="btn btn-ghost btn-sm" data-action="edit-service" data-id="'+s.id+'">Edit</button>' +
+          '<button class="btn btn-danger btn-sm" data-action="delete-service" data-id="'+s.id+'">Delete</button>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+    return '<table><thead><tr><th>Date</th>'+(showVehicle?'<th>Vehicle</th>':'')+'<th>Type</th><th>Notes</th><th>Odometer</th><th>Cost</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+
+  function renderServicing(){
+    var list = Array.from(state.services.values());
+    if(state.filters.svcVehicle) list = list.filter(function(s){ return s.vehicleId===state.filters.svcVehicle; });
+    list.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+
+    var html = '<div class="panel"><div class="panel-head"><h2>Service records</h2>' +
+      '<div class="panel-filters">' + vehicleFilterSelect('svcVehicle', state.filters.svcVehicle) + '</div>' +
+      '</div>';
+    if(!state.vehicles.size){
+      html += emptyState('Add a vehicle first to start logging service records.', true);
+    } else if(!list.length){
+      html += emptyState('No service records match this filter.');
+    } else {
+      html += '<div class="table-wrap">'+serviceTable(list,true)+'</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // ---------- fueling ----------
+  function fuelTable(list, showVehicle){
+    var rows = list.map(function(f){
+      var v = vehicleById(f.vehicleId);
+      return '<tr>' +
+        '<td class="num">'+fmtDate(f.date)+'</td>' +
+        (showVehicle ? '<td>'+esc(vehicleLabel(v))+'</td>' : '') +
+        '<td>'+esc(f.fuelType||'—')+'</td>' +
+        '<td class="num">'+fmtNum(f.quantity, f.fuelType==='Electric (Charge)'?'kWh':'L')+'</td>' +
+        '<td class="num">'+fmtMoney(f.cost)+'</td>' +
+        '<td>'+fileCell(f.poAssetId,f.poUrl,f.poFileName,f.poRef)+'</td>' +
+        '<td>'+fileCell(f.deliveryAssetId,f.deliveryUrl,f.deliveryFileName,f.deliveryRef)+'</td>' +
+        '<td>'+fuelStatusPill(f.status)+'</td>' +
+        '<td><div class="row-actions">' +
+          '<button class="btn btn-ghost btn-sm" data-action="edit-fuel" data-id="'+f.id+'">Edit</button>' +
+          '<button class="btn btn-danger btn-sm" data-action="delete-fuel" data-id="'+f.id+'">Delete</button>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+    return '<table><thead><tr><th>Date</th>'+(showVehicle?'<th>Vehicle</th>':'')+'<th>Fuel</th><th>Qty</th><th>Cost</th><th>PO</th><th>Delivery note</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  function fileCell(assetId, url, fileName, refText){
+    if(assetId && url) return '<a href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(fileName||'File')+'</a>';
+    if(refText) return '<span class="muted">'+esc(refText)+'</span>';
+    return '<span class="muted">—</span>';
+  }
+
+  function vehicleFilterSelect(key, current){
+    var opts = vehiclesSorted().map(function(v){
+      return '<option value="'+v.id+'"'+(current===v.id?' selected':'')+'>'+esc(vehicleLabel(v))+'</option>';
+    }).join('');
+    return '<select id="filter_'+key+'" style="width:200px"><option value="">All vehicles</option>'+opts+'</select>';
+  }
+
+  function renderFueling(){
+    var list = Array.from(state.fuels.values());
+    if(state.filters.fuelVehicle) list = list.filter(function(f){ return f.vehicleId===state.filters.fuelVehicle; });
+    if(state.filters.fuelStatus !== 'all') list = list.filter(function(f){ return (f.status||'open')===state.filters.fuelStatus; });
+    list.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+
+    var html = '<div class="panel"><div class="panel-head"><h2>Fueling records</h2>' +
+      '<div class="panel-filters">' +
+        vehicleFilterSelect('fuelVehicle', state.filters.fuelVehicle) +
+        '<select id="filter_fuelStatus" style="width:140px">' +
+          '<option value="all"'+(state.filters.fuelStatus==='all'?' selected':'')+'>All statuses</option>' +
+          '<option value="open"'+(state.filters.fuelStatus==='open'?' selected':'')+'>Open</option>' +
+          '<option value="closed"'+(state.filters.fuelStatus==='closed'?' selected':'')+'>Closed</option>' +
+        '</select>' +
+      '</div></div>';
+    if(!state.vehicles.size){
+      html += emptyState('Add a vehicle first to start logging fueling records.', true);
+    } else if(!list.length){
+      html += emptyState('No fueling records match this filter.');
+    } else {
+      html += '<div class="table-wrap">'+fuelTable(list,true)+'</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // ---------- modals ----------
+  function closeModal(){ $('#modalLayer').innerHTML = ''; }
+  function openModalHtml(html){ $('#modalLayer').innerHTML = html; }
+
+  function selectOptions(options, current){
+    return options.map(function(o){ return '<option value="'+esc(o)+'"'+(o===current?' selected':'')+'>'+esc(o)+'</option>'; }).join('');
+  }
+
+  function openVehicleModal(existing){
+    var v = existing || {};
+    var isEdit = !!existing;
+    var html = '<div class="modal-overlay" data-action="overlay-close">' +
+      '<div class="modal" data-stop>' +
+        '<div class="modal-head"><h2>'+(isEdit?'Edit vehicle':'Add vehicle')+'</h2><button class="modal-close" data-action="close-modal">&times;</button></div>' +
+        '<div class="modal-body">' +
+          '<div class="field"><label class="req">License plate</label><input type="text" id="f_plate" value="'+esc(v.plate||'')+'" placeholder="e.g. FDC 1234"></div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label>Make</label><input type="text" id="f_make" value="'+esc(v.make||'')+'" placeholder="e.g. Toyota"></div>' +
+            '<div class="field"><label>Model</label><input type="text" id="f_model" value="'+esc(v.model||'')+'" placeholder="e.g. Hiace"></div>' +
+          '</div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label>Year</label><input type="number" id="f_year" value="'+esc(v.year||'')+'" placeholder="2022"></div>' +
+            '<div class="field"><label>Type</label><select id="f_type"><option value="">Select type</option>'+selectOptions(VEHICLE_TYPES, v.type)+'</select></div>' +
+          '</div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label>Status</label><select id="f_status">' +
+              '<option value="active"'+(v.status==='active'?' selected':'')+'>Active</option>' +
+              '<option value="service"'+(v.status==='service'?' selected':'')+'>In service</option>' +
+              '<option value="inactive"'+(v.status==='inactive'?' selected':'')+'>Inactive</option>' +
+            '</select></div>' +
+            '<div class="field"><label>Condition</label><select id="f_condition">' +
+              '<option value="good"'+(v.condition==='good'?' selected':'')+'>Good</option>' +
+              '<option value="fair"'+(v.condition==='fair'?' selected':'')+'>Fair</option>' +
+              '<option value="poor"'+(v.condition==='poor'?' selected':'')+'>Poor</option>' +
+            '</select></div>' +
+          '</div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label>Mileage (km)</label><input type="number" id="f_mileage" value="'+esc(v.mileage||'')+'"></div>' +
+            '<div class="field"><label>Assigned to</label><input type="text" id="f_assigned" value="'+esc(v.assignedTo||'')+'" placeholder="Driver / department"></div>' +
+          '</div>' +
+          '<div class="field"><label>Service requirement</label><textarea id="f_svcreq" placeholder="e.g. Oil change every 5,000 km; tyre rotation every 10,000 km">'+esc(v.serviceRequirement||'')+'</textarea></div>' +
+          '<div class="field"><label>Condition notes</label><textarea id="f_notes" placeholder="Any known issues, damage, or observations">'+esc(v.notes||'')+'</textarea></div>' +
+        '</div>' +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="saveVehicle">'+(isEdit?'Save changes':'Add vehicle')+'</button></div>' +
+      '</div></div>';
+    openModalHtml(html);
+    $('#saveVehicle').addEventListener('click', async function(){
+      var plate = $('#f_plate').value.trim();
+      if(!plate){ toast('Please enter a license plate.'); $('#f_plate').focus(); return; }
+      var data = {
+        plate: plate,
+        make: $('#f_make').value.trim(),
+        model: $('#f_model').value.trim(),
+        year: $('#f_year').value ? Number($('#f_year').value) : null,
+        type: $('#f_type').value,
+        status: $('#f_status').value,
+        condition: $('#f_condition').value,
+        mileage: $('#f_mileage').value ? Number($('#f_mileage').value) : null,
+        assignedTo: $('#f_assigned').value.trim(),
+        serviceRequirement: $('#f_svcreq').value.trim(),
+        notes: $('#f_notes').value.trim()
+      };
+      var ok = isEdit ? await updateVehicle(existing.id, data) : await createVehicle(data);
+      if(ok) closeModal();
+    });
+  }
+
+  function openServiceModal(existing, presetVehicleId){
+    var s = existing || {};
+    var isEdit = !!existing;
+    if(!state.vehicles.size){ toast('Add a vehicle first.'); return; }
+    var html = '<div class="modal-overlay" data-action="overlay-close">' +
+      '<div class="modal" data-stop>' +
+        '<div class="modal-head"><h2>'+(isEdit?'Edit service record':'Add service record')+'</h2><button class="modal-close" data-action="close-modal">&times;</button></div>' +
+        '<div class="modal-body">' +
+          '<div class="field-row">' +
+            '<div class="field"><label class="req">Date of service</label><input type="date" id="s_date" value="'+esc(s.date||todayISO())+'"></div>' +
+            '<div class="field"><label class="req">Vehicle</label><select id="s_vehicle">'+vehiclesSorted().map(function(v){ return '<option value="'+v.id+'"'+((s.vehicleId||presetVehicleId)===v.id?' selected':'')+'>'+esc(vehicleLabel(v))+'</option>'; }).join('')+'</select></div>' +
+          '</div>' +
+          '<div class="field"><label class="req">Type of service</label><select id="s_type"><option value="">Select type</option>'+selectOptions(SERVICE_TYPES, s.type)+'</select></div>' +
+          '<div class="field"><label>Description / work done</label><textarea id="s_desc" placeholder="Details of the service performed">'+esc(s.description||'')+'</textarea></div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label>Odometer (km)</label><input type="number" id="s_odo" value="'+esc(s.odometer||'')+'"></div>' +
+            '<div class="field"><label>Cost (Rf)</label><input type="number" id="s_cost" value="'+esc(s.cost||'')+'"></div>' +
+          '</div>' +
+          '<div class="field"><label>Vendor / workshop</label><input type="text" id="s_vendor" value="'+esc(s.vendor||'')+'"></div>' +
+        '</div>' +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="saveService">'+(isEdit?'Save changes':'Add service record')+'</button></div>' +
+      '</div></div>';
+    openModalHtml(html);
+    $('#saveService').addEventListener('click', async function(){
+      var type = $('#s_type').value;
+      if(!type){ toast('Please choose a service type.'); return; }
+      var data = {
+        date: $('#s_date').value || todayISO(),
+        vehicleId: $('#s_vehicle').value,
+        type: type,
+        description: $('#s_desc').value.trim(),
+        odometer: $('#s_odo').value ? Number($('#s_odo').value) : null,
+        cost: $('#s_cost').value ? Number($('#s_cost').value) : null,
+        vendor: $('#s_vendor').value.trim()
+      };
+      var ok = isEdit ? await updateService(existing.id, data) : await createService(data);
+      if(ok) closeModal();
+    });
+  }
+
+  function fileFieldBlock(labelText, kind, existingUrl, existingName){
+    // kind: 'po' | 'delivery'
+    if(state.assets){
+      var current = kind==='po' ? fuelModalState.existingPo : fuelModalState.existingDelivery;
+      var display = current ?
+        '<div class="file-row"><span class="name">'+esc(current.name||'Uploaded file')+'</span>' +
+          '<a class="btn btn-ghost btn-sm" href="'+esc(current.url)+'" target="_blank" rel="noopener">View</a>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-action="clear-file" data-kind="'+kind+'">Remove</button></div>'
+        : '<input type="file" id="file_'+kind+'" accept="application/pdf,image/*">';
+      return '<div class="field"><label>'+labelText+'</label>' + display + '<div class="file-status" id="status_'+kind+'"></div></div>';
+    }
+    return '<div class="field"><label>'+labelText+' reference</label><input type="text" id="ref_'+kind+'" placeholder="PO / reference number" value="'+esc(kind==='po'? (fuelModalState.poRefVal||'') : (fuelModalState.deliveryRefVal||''))+'"><div class="hint">Real file uploads aren\'t enabled for this site yet — enter a PO / reference number instead.</div></div>';
+  }
+
+  function openFuelModal(existing, presetVehicleId){
+    if(!state.vehicles.size){ toast('Add a vehicle first.'); return; }
+    var f = existing || {};
+    var isEdit = !!existing;
+    fuelModalState = {
+      existingPo: f.poAssetId ? { id:f.poAssetId, url:f.poUrl, name:f.poFileName } : null,
+      existingDelivery: f.deliveryAssetId ? { id:f.deliveryAssetId, url:f.deliveryUrl, name:f.deliveryFileName } : null,
+      poRefVal: f.poRef || '', deliveryRefVal: f.deliveryRef || ''
+    };
+    renderFuelModalHtml(f, isEdit, presetVehicleId);
+  }
+
+  function renderFuelModalHtml(f, isEdit, presetVehicleId){
+    var html = '<div class="modal-overlay" data-action="overlay-close">' +
+      '<div class="modal" data-stop>' +
+        '<div class="modal-head"><h2>'+(isEdit?'Edit fueling record':'Add fueling record')+'</h2><button class="modal-close" data-action="close-modal">&times;</button></div>' +
+        '<div class="modal-body">' +
+          '<div class="field-row">' +
+            '<div class="field"><label class="req">Date</label><input type="date" id="fu_date" value="'+esc(f.date||todayISO())+'"></div>' +
+            '<div class="field"><label class="req">Vehicle</label><select id="fu_vehicle">'+vehiclesSorted().map(function(v){ return '<option value="'+v.id+'"'+((f.vehicleId||presetVehicleId)===v.id?' selected':'')+'>'+esc(vehicleLabel(v))+'</option>'; }).join('')+'</select></div>' +
+          '</div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label>Fuel type</label><select id="fu_type">'+selectOptions(FUEL_TYPES, f.fuelType)+'</select></div>' +
+            '<div class="field"><label>Quantity</label><input type="number" id="fu_qty" value="'+esc(f.quantity||'')+'"></div>' +
+          '</div>' +
+          '<div class="field"><label>Cost (Rf)</label><input type="number" id="fu_cost" value="'+esc(f.cost||'')+'"></div>' +
+          fileFieldBlock('Purchase order (PO)', 'po') +
+          fileFieldBlock('Delivery note', 'delivery') +
+          '<div class="hint" style="margin-bottom:10px">Adding a delivery note reference automatically marks this record Closed.</div>' +
+          '<div class="field"><label>Notes</label><textarea id="fu_notes" placeholder="Optional notes">'+esc(f.notes||'')+'</textarea></div>' +
+        '</div>' +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="saveFuel">'+(isEdit?'Save changes':'Add fueling record')+'</button></div>' +
+      '</div></div>';
+    openModalHtml(html);
+
+    if(state.assets){
+      var poInput = $('#file_po'); var delInput = $('#file_delivery');
+      if(poInput) poInput.addEventListener('change', function(e){ handleFuelFileChange(e,'po'); });
+      if(delInput) delInput.addEventListener('change', function(e){ handleFuelFileChange(e,'delivery'); });
+    }
+    var fRef = { data:f, isEdit:isEdit, presetVehicleId:presetVehicleId, id: f.id };
+    $('#saveFuel').addEventListener('click', function(){ submitFuel(fRef); });
+  }
+
+  async function handleFuelFileChange(e, kind){
+    var file = e.target.files && e.target.files[0];
+    if(!file) return;
+    var statusEl = $('#status_'+kind);
+    if(statusEl) statusEl.textContent = 'Uploading…';
+    var res = await uploadFile(file);
+    if(res){
+      if(kind==='po') fuelModalState.existingPo = res; else fuelModalState.existingDelivery = res;
+      if(statusEl) statusEl.textContent = '';
+      // re-render just this field block by re-rendering whole modal body would lose other inputs; instead patch DOM
+      var wrap = e.target.closest('.field');
+      if(wrap) wrap.innerHTML = '<label>'+(kind==='po'?'Purchase order (PO)':'Delivery note')+'</label>' +
+        '<div class="file-row"><span class="name">'+esc(res.name)+'</span>' +
+        '<a class="btn btn-ghost btn-sm" href="'+esc(res.url)+'" target="_blank" rel="noopener">View</a>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-action="clear-file" data-kind="'+kind+'">Remove</button></div>' +
+        '<div class="file-status"></div>';
+    } else if(statusEl){ statusEl.textContent = 'Upload failed.'; }
+  }
+
+  function clearFuelFile(kind){
+    var existing = kind==='po' ? fuelModalState.existingPo : fuelModalState.existingDelivery;
+    if(existing && existing.id) deleteAssetSafe(existing.id);
+    if(kind==='po') fuelModalState.existingPo = null; else fuelModalState.existingDelivery = null;
+    // re-render field block back to an empty file input
+    var fields = document.querySelectorAll('.modal-body .field');
+    fields.forEach(function(field){
+      var label = field.querySelector('label');
+      if(label && ((kind==='po' && /purchase order/i.test(label.textContent)) || (kind==='delivery' && /delivery note/i.test(label.textContent)))){
+        field.innerHTML = '<label>'+(kind==='po'?'Purchase order (PO)':'Delivery note')+'</label>' +
+          '<input type="file" id="file_'+kind+'" accept="application/pdf,image/*">' +
+          '<div class="file-status" id="status_'+kind+'"></div>';
+        var input = field.querySelector('input[type=file]');
+        input.addEventListener('change', function(e){ handleFuelFileChange(e, kind); });
+      }
+    });
+  }
+
+  async function submitFuel(fRef){
+    var poRefInput = $('#ref_po'); var delRefInput = $('#ref_delivery');
+    var poRef = poRefInput ? poRefInput.value.trim() : (fRef.data.poRef||'');
+    var deliveryRef = delRefInput ? delRefInput.value.trim() : (fRef.data.deliveryRef||'');
+    var hasDelivery = !!(fuelModalState.existingDelivery && fuelModalState.existingDelivery.id) || !!deliveryRef;
+    var data = {
+      date: $('#fu_date').value || todayISO(),
+      vehicleId: $('#fu_vehicle').value,
+      fuelType: $('#fu_type').value,
+      quantity: $('#fu_qty').value ? Number($('#fu_qty').value) : null,
+      cost: $('#fu_cost').value ? Number($('#fu_cost').value) : null,
+      notes: $('#fu_notes').value.trim(),
+      poAssetId: fuelModalState.existingPo ? fuelModalState.existingPo.id : null,
+      poUrl: fuelModalState.existingPo ? fuelModalState.existingPo.url : null,
+      poFileName: fuelModalState.existingPo ? fuelModalState.existingPo.name : null,
+      poRef: poRef || null,
+      deliveryAssetId: fuelModalState.existingDelivery ? fuelModalState.existingDelivery.id : null,
+      deliveryUrl: fuelModalState.existingDelivery ? fuelModalState.existingDelivery.url : null,
+      deliveryFileName: fuelModalState.existingDelivery ? fuelModalState.existingDelivery.name : null,
+      deliveryRef: deliveryRef || null,
+      status: hasDelivery ? 'closed' : 'open'
+    };
+    var ok = fRef.isEdit ? await updateFuel(fRef.id, data) : await createFuel(data);
+    if(ok) closeModal();
+  }
+
+  function confirmModal(message, onYes){
+    var html = '<div class="modal-overlay" data-action="overlay-close">' +
+      '<div class="modal" data-stop style="max-width:380px">' +
+        '<div class="modal-head"><h2>Please confirm</h2><button class="modal-close" data-action="close-modal">&times;</button></div>' +
+        '<div class="modal-body">'+esc(message)+'</div>' +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Cancel</button><button class="btn btn-danger" id="confirmYes">Delete</button></div>' +
+      '</div></div>';
+    openModalHtml(html);
+    $('#confirmYes').addEventListener('click', function(){ closeModal(); onYes(); });
+  }
+
+  // ---------- global event delegation ----------
+  document.addEventListener('click', function(e){
+    var overlay = e.target.closest && e.target.closest('.modal-overlay');
+    if(overlay && e.target === overlay){ closeModal(); return; }
+
+    var el = e.target.closest && e.target.closest('[data-action]');
+    if(!el) return;
+    var action = el.getAttribute('data-action');
+    var id = el.getAttribute('data-id');
+
+    switch(action){
+      case 'nav':
+        state.tab = el.getAttribute('data-tab');
+        state.detailVehicleId = null;
+        renderApp();
+        break;
+      case 'open-vehicle':
+        state.tab = 'vehicles'; state.detailVehicleId = id; renderApp();
+        break;
+      case 'back-to-vehicles':
+        state.detailVehicleId = null; renderApp();
+        break;
+      case 'add-vehicle':
+        openVehicleModal(null);
+        break;
+      case 'edit-vehicle':
+        openVehicleModal(vehicleById(id));
+        break;
+      case 'delete-vehicle':
+        confirmModal('Remove this vehicle from the fleet log? Its service and fueling history will be kept but unlinked.', function(){ deleteVehicle(id).then(function(){ if(state.detailVehicleId===id){ state.detailVehicleId=null; renderApp(); } }); });
+        break;
+      case 'add-service':
+        openServiceModal(null, el.getAttribute('data-vehicle')||null);
+        break;
+      case 'edit-service':
+        openServiceModal(state.services.get(id), null);
+        break;
+      case 'delete-service':
+        confirmModal('Delete this service record?', function(){ deleteService(id); });
+        break;
+      case 'add-fuel':
+        openFuelModal(null, el.getAttribute('data-vehicle')||null);
+        break;
+      case 'edit-fuel':
+        openFuelModal(state.fuels.get(id), null);
+        break;
+      case 'delete-fuel':
+        confirmModal('Delete this fueling record?', function(){
+          var f = state.fuels.get(id);
+          if(f){ if(f.poAssetId) deleteAssetSafe(f.poAssetId); if(f.deliveryAssetId) deleteAssetSafe(f.deliveryAssetId); }
+          deleteFuel(id);
+        });
+        break;
+      case 'close-modal':
+        closeModal();
+        break;
+      case 'clear-file':
+        clearFuelFile(el.getAttribute('data-kind'));
+        break;
+    }
+  });
+
+  document.addEventListener('input', function(e){
+    if(e.target.id === 'vehicleSearch'){
+      state.filters.vehicleSearch = e.target.value;
+      renderApp();
+      var again = $('#vehicleSearch');
+      if(again){ again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+    }
+  });
+  document.addEventListener('change', function(e){
+    if(e.target.id === 'filter_svcVehicle'){ state.filters.svcVehicle = e.target.value; renderApp(); }
+    if(e.target.id === 'filter_fuelVehicle'){ state.filters.fuelVehicle = e.target.value; renderApp(); }
+    if(e.target.id === 'filter_fuelStatus'){ state.filters.fuelStatus = e.target.value; renderApp(); }
+  });
+
+  boot();
+})();
+</script>
+</body>
+</html>
