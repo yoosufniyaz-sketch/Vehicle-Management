@@ -300,20 +300,39 @@
   }
 
   // ---------- local identity (no login system — just a display name) ----------
+  // No blocking window.prompt() here — it freezes the page for every visitor
+  // until dismissed. Default silently, let people set it from the sidebar.
   function getMyName(){
     try{
-      var name = localStorage.getItem('fdc_name');
-      if(!name){
-        name = (window.prompt('Your name (shown as "added by" on records you create):') || '').trim() || 'Team member';
-        localStorage.setItem('fdc_name', name);
-      }
-      return name;
+      return localStorage.getItem('fdc_name') || 'Team member';
     }catch(e){ return 'Team member'; }
+  }
+  function setMyName(name){
+    var clean = (name||'').trim() || 'Team member';
+    state.myId = clean;
+    try{ localStorage.setItem('fdc_name', clean); }catch(e){}
   }
   function nameFor(id){
     if(!id) return '—';
     if(id === state.myId) return 'You';
     return id;
+  }
+  function openNameModal(){
+    var html = '<div class="modal-overlay" data-action="overlay-close">' +
+      '<div class="modal" data-stop style="max-width:380px">' +
+        '<div class="modal-head"><h2>Your display name</h2><button class="modal-close" data-action="close-modal">&times;</button></div>' +
+        '<div class="modal-body">' +
+          '<div class="field"><label>Shown as "added by" on records you create</label><input type="text" id="f_myname" value="'+esc(state.myId||'')+'" placeholder="e.g. Ahmed"></div>' +
+        '</div>' +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="saveMyName">Save</button></div>' +
+      '</div></div>';
+    openModalHtml(html);
+    $('#f_myname').focus();
+    $('#saveMyName').addEventListener('click', function(){
+      setMyName($('#f_myname').value);
+      closeModal();
+      renderApp();
+    });
   }
 
   // ---------- Firebase boot ----------
@@ -473,7 +492,8 @@
         '<aside class="sidebar">' +
           '<div class="brand"><div class="mark">FDC Fleet</div><div class="sub">Vehicle Management</div></div>' +
           '<nav class="nav">' + NAV.map(navItem).join('') + '</nav>' +
-          '<div class="sidebar-foot">Corporate vehicle logs &amp; documents<br>Data syncs live for everyone with access.</div>' +
+          '<div class="sidebar-foot">Corporate vehicle logs &amp; documents<br>Data syncs live for everyone with access.<br>' +
+            'Posting as <strong>'+esc(state.myId||'Team member')+'</strong> — <button class="link-btn" data-action="set-name" style="font-size:11.5px">change</button></div>' +
         '</aside>' +
         '<div class="main">' +
           '<header class="topbar">' +
@@ -1063,6 +1083,9 @@
         break;
       case 'close-modal':
         closeModal();
+        break;
+      case 'set-name':
+        openNameModal();
         break;
       case 'clear-file':
         clearFuelFile(el.getAttribute('data-kind'));
