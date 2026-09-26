@@ -7,7 +7,7 @@
 <meta name="description" content="Portal to manage all FDC corporate vehicles">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Oswald:wght@700&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#101826;--paper:#eef0ee;--surface:#ffffff;--surface-2:#f6f7f6;
@@ -36,8 +36,8 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--paper);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:"Oswald",system-ui,sans-serif;font-weight:600;letter-spacing:.01em;margin:0}
-.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+h1,h2,h3{font-family:"IBM Plex Sans",system-ui,sans-serif;font-weight:600;letter-spacing:.02em;margin:0}
+.mono{font-weight:500;letter-spacing:.02em;font-variant-numeric:tabular-nums}
 button{font:inherit;cursor:pointer}
 a{color:var(--accent)}
 .shell{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
@@ -45,7 +45,7 @@ a{color:var(--accent)}
 /* Sidebar */
 .side{background:var(--surface);border-right:1px solid var(--line);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:20px 14px}
 .brand{padding:0 8px 22px}
-.brand .mark{font-family:"Oswald";font-weight:700;font-size:19px;text-transform:uppercase;color:var(--accent-strong);letter-spacing:.03em;line-height:1.1}
+.brand .mark{font-family:"Oswald",system-ui,sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:var(--accent-strong);letter-spacing:.03em;line-height:1.1}
 .brand .sub{font-size:11px;text-transform:uppercase;color:var(--steel);letter-spacing:.12em;margin-top:3px}
 .nav{display:flex;flex-direction:column;gap:3px}
 .nav button{display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--steel);padding:10px 12px;border-radius:8px;text-align:left;font-weight:500}
@@ -62,7 +62,7 @@ a{color:var(--accent)}
 /* Main */
 main{min-width:0;padding:26px 30px 60px}
 .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
-.top h1{font-size:26px;text-transform:uppercase}
+.top h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
 .top p{margin:4px 0 0;color:var(--steel)}
 .btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:8px;font-weight:500;text-decoration:none;white-space:nowrap}
 .btn:hover{border-color:var(--steel-soft)}
@@ -75,13 +75,13 @@ main{min-width:0;padding:26px 30px 60px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .kpi .l{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--steel)}
-.kpi .v{font-family:"Oswald";font-size:28px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .v{font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1.25;margin-top:2px;font-variant-numeric:tabular-nums}
 .kpi .v.crit{color:var(--critical)}.kpi .v.warn{color:var(--warn)}
 .kpi .s{font-size:12px;color:var(--steel-soft)}
 
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:18px}
 .panel-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
-.panel-h h2{font-size:15px;text-transform:uppercase}
+.panel-h h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--steel)}
 .alerts{list-style:none;margin:0;padding:4px 0;max-height:240px;overflow:auto}
 .alerts li{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--line);cursor:pointer}
 .alerts li:last-child{border-bottom:0}
@@ -99,7 +99,7 @@ main{min-width:0;padding:26px 30px 60px}
 .pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .pill.crit{background:var(--critical-soft);color:var(--critical);border-color:transparent}
 .pill.acc{background:var(--accent-soft);color:var(--accent-strong);border-color:transparent}
-.badge{font-family:"IBM Plex Mono";font-size:11px;font-weight:600;background:var(--critical);color:#fff;border-radius:99px;padding:1px 7px}
+.badge{font-size:11px;font-weight:600;background:var(--critical);color:#fff;border-radius:99px;padding:1px 7px}
 
 /* Vehicle cards */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
@@ -109,7 +109,7 @@ main{min-width:0;padding:26px 30px 60px}
 .vimg img{width:100%;height:100%;object-fit:contain;display:block}
 .vimg:has(img),.drawer .hero:has(img),.imgpick .prev:has(img){background:#fff}
 .vbody{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
-.plate{font-family:"IBM Plex Mono";font-weight:600;font-size:15px;letter-spacing:.04em}
+.plate{font-weight:600;font-size:16px;letter-spacing:.03em;font-variant-numeric:tabular-nums}
 .vname{color:var(--steel);font-size:13px}
 .statline{display:flex;gap:6px;flex-wrap:wrap}
 
@@ -137,12 +137,12 @@ tr.tot td{background:var(--surface-2)}
 .pie-wrap{display:flex;align-items:center;justify-content:center;gap:24px;padding:18px 16px;flex-wrap:wrap}
 .pie-svg,.line-wrap{position:relative}
 .line-wrap{padding:10px 12px 6px}
-.pie-total{font-family:"Oswald";font-size:28px;font-weight:600;fill:var(--ink)}
+.pie-total{font-size:26px;font-weight:600;fill:var(--ink)}
 .pie-sub{font-size:12px;fill:var(--steel)}
 .pie-legend{display:flex;flex-direction:column;gap:14px}
 .pl-row{display:flex;gap:10px;align-items:flex-start}
 .pl-name{font-weight:600}.pl-pct{color:var(--steel);font-weight:500;margin-left:4px}
-.pl-val{font-family:"Oswald";font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.pl-val{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
 .swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .swatch.lg{width:14px;height:14px;margin-top:3px}
 .legend{display:flex;gap:14px;font-size:12.5px;color:var(--steel)}
@@ -172,8 +172,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .span2{grid-column:span 2}.span3{grid-column:1/-1}
 fieldset{border:1px solid var(--line);border-radius:10px;padding:12px 14px 14px;margin:0}
-legend{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:13px;padding:0 6px;color:var(--accent-strong)}
-.fsec{margin:18px 0 8px;font-family:"Oswald";text-transform:uppercase;font-size:14px;color:var(--steel);letter-spacing:.04em;display:flex;align-items:center;gap:10px}
+legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.06em;padding:0 6px;color:var(--accent-strong)}
+.fsec{margin:18px 0 8px;font-weight:600;text-transform:uppercase;font-size:12px;color:var(--steel);letter-spacing:.07em;display:flex;align-items:center;gap:10px}
 .fsec:after{content:"";flex:1;height:1px;background:var(--line)}
 .hint{font-size:12px;color:var(--steel-soft);font-weight:400}
 .imgpick{display:flex;gap:14px;align-items:center}
@@ -188,7 +188,7 @@ legend{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:1
 .modal{background:var(--surface);border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
 .modal.wide{max-width:860px}
 .modal-h{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
-.modal-h h2{font-size:18px;text-transform:uppercase}
+.modal-h h2{font-size:18px;font-weight:600;letter-spacing:0}
 .modal-b{padding:18px 20px}
 .modal-f{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--surface-2);border-radius:0 0 14px 14px}
 .x{border:0;background:none;font-size:22px;line-height:1;color:var(--steel);padding:4px 8px;border-radius:6px}
@@ -204,11 +204,11 @@ legend{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:1
 .specs div span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--steel-soft)}
 .statcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;border-left:4px solid var(--line-strong)}
 .statcard.good{border-left-color:var(--good)}.statcard.warn{border-left-color:var(--warn)}.statcard.crit{border-left-color:var(--critical)}
-.statcard h3{font-size:14px;text-transform:uppercase}
+.statcard h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.07em}
 .statcard .meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px;font-size:13px}
 .statcard .meta span{display:block;font-size:11px;color:var(--steel-soft);text-transform:uppercase;letter-spacing:.06em}
 .mini{background:var(--surface);border:1px solid var(--line);border-radius:12px}
-.mini h3{font-size:13px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid var(--line)}
+.mini h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--steel);padding:10px 14px;border-bottom:1px solid var(--line)}
 .scrim{position:fixed;inset:0;background:rgba(10,14,20,.3);z-index:39}
 .scrim[hidden]{display:none}
 .lightbox{position:fixed;inset:0;z-index:95;background:rgba(5,8,12,.92);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
@@ -240,7 +240,7 @@ body:not(.is-admin) [data-act="delReq"],body:not(.is-admin) [data-act="delServic
 body.locked .shell{visibility:hidden}
 .auth-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 26px;box-shadow:var(--shadow)}
 .auth-brand{text-align:center;margin-bottom:20px}
-.auth-brand .mark{font-family:"Oswald";font-weight:700;font-size:24px;text-transform:uppercase;color:var(--accent-strong);letter-spacing:.03em}
+.auth-brand .mark{font-family:"Oswald",system-ui,sans-serif;font-weight:700;font-size:24px;text-transform:uppercase;color:var(--accent-strong);letter-spacing:.03em}
 .auth-brand .sub{font-size:11px;text-transform:uppercase;color:var(--steel);letter-spacing:.14em;margin-top:2px}
 .auth-tabs{display:flex;margin-bottom:18px}.auth-tabs button{flex:1}
 .auth-submit{justify-content:center;padding:10px 14px}
