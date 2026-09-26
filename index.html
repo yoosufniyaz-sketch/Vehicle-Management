@@ -589,8 +589,9 @@ function typeIcon(t){
 }
 
 /* ---------- Drawer ---------- */
-function openDrawer(id){state.drawerId=id;renderDrawer();$("#drawer").classList.add("open");$("#scrim").hidden=false;}
-function closeDrawer(){state.drawerId=null;$("#drawer").classList.remove("open");$("#scrim").hidden=true;}
+function openDrawer(id){Nav.openLayer();state.drawerId=id;renderDrawer();$("#drawer").classList.add("open");$("#scrim").hidden=false;}
+function closeDrawerUI(){state.drawerId=null;$("#drawer").classList.remove("open");$("#scrim").hidden=true;}
+function closeDrawer(){var was=!!state.drawerId;closeDrawerUI();if(was)Nav.layerClosed();}
 function renderDrawer(){
   var v=vehicleById(state.drawerId); if(!v){closeDrawer();return;}
   var fuel=Store.data.fuel_records.filter(function(r){return r.vehicleId===v.id;}).sort(byDateDesc);
@@ -928,10 +929,63 @@ var modalCtx=null;
 function openModal(title,body,opts2){
   opts2=opts2||{};
   $("#overlay").innerHTML='<form class="modal '+(opts2.wide?"wide":"")+'" id="mform" novalidate><div class="modal-h"><h2>'+title+'</h2><button type="button" class="x" data-act="closeModal" aria-label="Close">×</button></div><div class="modal-b">'+body+'</div><div class="modal-f">'+(opts2.del?'<button type="button" class="btn danger" data-act="'+opts2.del+'" style="margin-right:auto">Delete</button>':"")+'<button type="button" class="btn" data-act="closeModal">Cancel</button><button type="submit" class="btn primary">'+(opts2.submit||"Save")+'</button></div></form>';
+  Nav.openLayer();
   $("#overlay").hidden=false;
   var f=$("#mform input:not([type=file]),#mform select,#mform textarea"); if(f&&!opts2.noFocus) f.focus();
 }
-function closeModal(){$("#overlay").hidden=true;$("#overlay").innerHTML="";modalCtx=null;}
+function closeModalUI(){$("#overlay").hidden=true;$("#overlay").innerHTML="";modalCtx=null;}
+function closeModal(){var was=!$("#overlay").hidden;closeModalUI();if(was)Nav.layerClosed();}
+function openLightbox(src){Nav.openLayer();var lb=$("#lightbox");lb.querySelector("img").src=src;lb.hidden=false;}
+function closeLightboxUI(){$("#lightbox").hidden=true;}
+function closeLightbox(){var was=!$("#lightbox").hidden;closeLightboxUI();if(was)Nav.layerClosed();}
+
+/* ================= IN-APP BACK / FORWARD NAVIGATION =================
+   Each page (Vehicle Details, Fueling, …) is a history entry (#/fueling).
+   Opening a panel, form or photo adds one "overlay" entry, so the browser / phone
+   Back button closes the top-most panel instead of leaving the app. */
+var VIEWS=["vehicles","fueling","servicing","reports","users"];
+var Nav={
+  overlay:false, ignore:0, needPush:false,
+  anyOpen:function(){return !$("#lightbox").hidden||!$("#overlay").hidden||!!state.drawerId;},
+  push:function(st,hash){history.pushState(st,"",hash);},
+  openLayer:function(){
+    if(this.overlay) return; this.overlay=true;
+    if(this.ignore>0) this.needPush=true; else this.push({view:state.view,overlay:1},location.hash);
+  },
+  layerClosed:function(){
+    if(!this.overlay||this.anyOpen()) return; this.overlay=false;
+    if(this.needPush){this.needPush=false;return;}
+    this.ignore++; history.back();
+  },
+  closeTop:function(){
+    if(!$("#lightbox").hidden) closeLightboxUI();
+    else if(!$("#overlay").hidden) closeModalUI();
+    else if(state.drawerId) closeDrawerUI();
+  },
+  closeAllUI:function(){closeLightboxUI();closeModalUI();closeDrawerUI();},
+  go:function(view){
+    if(VIEWS.indexOf(view)<0) view="vehicles";
+    var hadOverlay=this.overlay; this.closeAllUI(); this.overlay=false; this.needPush=false;
+    if(view===state.view){ if(hadOverlay){this.ignore++;history.back();} window.scrollTo(0,0); return; }
+    state.view=view;
+    if(hadOverlay) history.replaceState({view:view},"","#/"+view); else this.push({view:view},"#/"+view);
+    render(); window.scrollTo(0,0);
+  },
+  fromHash:function(){var v=(location.hash.match(/^#\/(\w+)/)||[])[1];return VIEWS.indexOf(v)>=0?v:null;}
+};
+window.addEventListener("popstate",function(e){
+  if(Nav.ignore>0){ Nav.ignore--; if(Nav.ignore===0&&Nav.needPush){Nav.needPush=false;Nav.push({view:state.view,overlay:1},location.hash);} return; }
+  var st=e.state||{};
+  if(st.overlay){ // came "forward" onto an overlay entry with nothing open — step back over it
+    if(!Nav.anyOpen()){Nav.ignore++;history.back();} else Nav.overlay=true; return; }
+  if(Nav.overlay||Nav.anyOpen()){
+    Nav.overlay=false; Nav.closeTop();
+    if(Nav.anyOpen()){Nav.overlay=true;Nav.push({view:state.view,overlay:1},location.hash);} // more layers left: keep one Back step per layer
+    return;
+  }
+  var v=st.view||Nav.fromHash()||"vehicles";
+  if(v!==state.view){state.view=v;render();window.scrollTo(0,0);}
+});
 
 /* ---------- Vehicle form ---------- */
 var pendingImage=null;
@@ -1306,7 +1360,7 @@ document.addEventListener("click",function(e){
 
 /* ================= EVENTS ================= */
 document.addEventListener("click",function(e){
-  var nb=e.target.closest("#nav button"); if(nb){state.view=nb.dataset.view;closeDrawer();render();window.scrollTo(0,0);return;}
+  var nb=e.target.closest("#nav button"); if(nb){Nav.go(nb.dataset.view);return;}
   if(e.target.id==="overlay"){closeModal();return;}
   var a=e.target.closest("[data-act]"); if(!a) return;
   var id=a.dataset.id, act=a.dataset.act;
@@ -1317,8 +1371,8 @@ document.addEventListener("click",function(e){
     case "openVehicle": if(id&&vehicleById(id)) openDrawer(id); break;
     case "closeDrawer": closeDrawer(); break;
     case "closeModal": closeModal(); break;
-    case "zoomImg": var zv=vehicleById(state.drawerId); if(zv&&zv.image){var lb=$("#lightbox");lb.querySelector("img").src=zv.image;lb.hidden=false;} break;
-    case "closeLightbox": $("#lightbox").hidden=true; break;
+    case "zoomImg": var zv=vehicleById(state.drawerId); if(zv&&zv.image){openLightbox(zv.image);} break;
+    case "closeLightbox": closeLightbox(); break;
     case "renew": openRenew(id,a.dataset.key); break;
     case "clearImg": pendingImage="";$("#imgPrev").innerHTML="No photo";a.remove(); break;
     case "delVehicle":
@@ -1398,7 +1452,7 @@ document.addEventListener("submit",async function(e){
   }catch(err){ if(err){console.error(err); toast("Save failed: "+(err.message||err));} }
   finally{ if(btn.isConnected) btn.disabled=false; }
 });
-document.addEventListener("keydown",function(e){if(e.key==="Escape"){if(!$("#lightbox").hidden)$("#lightbox").hidden=true;else if(!$("#overlay").hidden)closeModal();else if(state.drawerId)closeDrawer();}});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){if(!$("#lightbox").hidden)closeLightbox();else if(!$("#overlay").hidden)closeModal();else if(state.drawerId)closeDrawer();}});
 
 /* ================= INSTALLABLE APP (PWA) ================= */
 var deferredInstall=null;
@@ -1423,6 +1477,8 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 
 /* ================= BOOT ================= */
 applyTheme();
+state.view=Nav.fromHash()||"vehicles";
+history.replaceState({view:state.view},"","#/"+state.view);
 render();
 Auth.init();
 </script>
