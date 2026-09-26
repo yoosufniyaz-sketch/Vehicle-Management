@@ -175,7 +175,26 @@ legend{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:1
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-size:13.5px;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
 
+.who{display:flex;flex-direction:column;min-width:0}
+.who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mobile-out{display:none}
+/* Auth screen */
+.auth{position:fixed;inset:0;z-index:100;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:24px 16px;overflow:auto}
+.auth[hidden]{display:none}
+body.locked .shell{visibility:hidden}
+.auth-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 26px;box-shadow:var(--shadow)}
+.auth-brand{text-align:center;margin-bottom:20px}
+.auth-brand .mark{font-family:"Oswald";font-weight:700;font-size:24px;text-transform:uppercase;color:var(--accent-strong);letter-spacing:.03em}
+.auth-brand .sub{font-size:11px;text-transform:uppercase;color:var(--steel);letter-spacing:.14em;margin-top:2px}
+.auth-tabs{display:flex;margin-bottom:18px}.auth-tabs button{flex:1}
+.auth-submit{justify-content:center;padding:10px 14px}
+.auth-msg{font-size:13px;padding:9px 11px;border-radius:7px;background:var(--critical-soft);color:var(--critical)}
+.auth-msg.ok{background:var(--good-soft);color:var(--good)}
+.auth [data-only][hidden]{display:none}
+.pw{position:relative}.pw input{padding-right:58px}
+.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--accent);font-size:12px;padding:4px 6px}
 @media (max-width:900px){
+  .mobile-out{display:inline-flex;margin-left:auto;flex:none}
   .shell{grid-template-columns:1fr}
   .side{position:sticky;height:auto;flex-direction:row;align-items:center;padding:10px 12px;gap:10px;z-index:30;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
   .brand{padding:0 6px 0 0;flex:none}.brand .sub{display:none}
@@ -194,7 +213,7 @@ legend{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:1
 }
 </style>
 </head>
-<body>
+<body class="locked">
 <div class="shell">
   <aside class="side">
     <div class="brand"><div class="mark">FDC Vehicle<br>Management</div><div class="sub">Corporate Fleet Portal</div></div>
@@ -205,12 +224,40 @@ legend{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:1
     </nav>
     <div class="side-foot">
       <div class="sync"><span class="dot" id="syncDot"></span><span id="syncText">Connecting…</span></div>
-      <div>Signed as <b id="whoName">—</b></div>
+      <div class="who"><b id="whoName">—</b><span id="whoEmail" class="hint"></span></div>
       <button class="linkbtn" data-act="settings">Settings &amp; notifications</button>
+      <button class="linkbtn" data-act="signOut">Sign out</button>
     </div>
+    <button class="btn sm mobile-out" data-act="signOut">Sign out</button>
   </aside>
   <main id="main"></main>
 </div>
+
+<!-- ============ LOGIN / REGISTER ============ -->
+<section class="auth" id="auth">
+  <div class="auth-card">
+    <div class="auth-brand"><div class="mark">FDC Vehicle Management</div><div class="sub">Corporate Fleet Portal</div></div>
+    <div class="tabs auth-tabs" role="tablist">
+      <button type="button" data-auth="login" class="on">Sign in</button>
+      <button type="button" data-auth="register">Register</button>
+    </div>
+    <div class="hint" id="authLoading" style="text-align:center">Checking sign-in…</div>
+    <form id="authForm" novalidate hidden>
+      <div class="grid">
+        <label data-only="register">Full name <input name="name" autocomplete="name"></label>
+        <label>Email address <input name="email" type="email" autocomplete="email" required></label>
+        <label>Password
+          <div class="pw"><input name="password" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" data-act="togglePw" aria-label="Show password">Show</button></div>
+        </label>
+        <label data-only="register">Confirm password <input name="password2" type="password" autocomplete="new-password"></label>
+        <div class="hint" data-only="register">At least 8 characters, including a letter and a number.</div>
+        <div class="auth-msg" id="authMsg" role="alert" hidden></div>
+        <button type="submit" class="btn primary auth-submit" id="authSubmit">Sign in</button>
+        <button type="button" class="linkbtn" data-only="login" data-act="forgotPw" style="justify-self:center">Forgot password?</button>
+      </div>
+    </form>
+  </div>
+</section>
 
 <div class="scrim" id="scrim" hidden data-act="closeDrawer"></div>
 <aside class="drawer" id="drawer" aria-label="Vehicle details"></aside>
@@ -248,38 +295,39 @@ var DURATIONS = [["","Custom"],["6","6 months"],["12","1 year"],["24","2 years"]
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 var settings = Object.assign({remindDays:30, spBase:"", currency:"Rf"}, lsGet("fdc_settings",{}));
-var userName = lsGet("fdc_name_v2", null) || (function(){try{return localStorage.getItem("fdc_name")||"";}catch(e){return "";}})();
+/* Optional: only allow sign-up with these email domains, e.g. ["fdc.mv"]. Empty = any email.
+   (Also enforce this in your Firestore security rules — see notes.) */
+var ALLOWED_EMAIL_DOMAINS = [];
+var currentUser = null;
+var userName = "";
 
 /* ================= STORE ================= */
 var Store = {
   mode:"local", db:null,
   data:{vehicles:[],fuel_records:[],service_records:[]},
-  init: async function(){
-    try{
-      if(!window.firebase) throw new Error("Firebase not loaded");
-      firebase.initializeApp(FIREBASE_CONFIG);
-      await Promise.race([firebase.auth().signInAnonymously(), new Promise(function(_,r){setTimeout(function(){r(new Error("timeout"));},9000);})]);
-      this.db = firebase.firestore();
-      this.mode = "cloud";
-      var self=this;
-      COLS.forEach(function(c){
-        self.db.collection(c).onSnapshot(function(snap){
-          self.data[c] = snap.docs.map(function(d){return Object.assign({id:d.id}, d.data());});
-          render();
-        }, function(err){
-          console.error(err); self.fallback("Cloud read failed ("+(err.code||err.message)+") — using this browser only");
-        });
-      });
-      setSync("good","Synced to cloud");
-    }catch(e){
-      console.warn(e); this.fallback("Offline — saving in this browser only");
-    }
+  unsubs:[],
+  /* Start live listeners — called only after a successful email/password sign-in */
+  start: function(){
+    this.stop();
+    this.db = this.db || firebase.firestore();
+    this.mode = "cloud";
+    var self=this;
+    setSync("warn","Loading data…");
+    COLS.forEach(function(c){
+      self.unsubs.push(self.db.collection(c).onSnapshot(function(snap){
+        self.data[c] = snap.docs.map(function(d){return Object.assign({id:d.id}, d.data());});
+        setSync("good","Synced to cloud");
+        render();
+      }, function(err){
+        console.error(err);
+        setSync("crit", err.code==="permission-denied" ? "No database access — check Firestore rules" : "Database error ("+(err.code||err.message)+")");
+      }));
+    });
   },
-  fallback: function(msg){
-    if(this.mode==="local-fallback") return;
-    this.mode="local-fallback";
-    var self=this; COLS.forEach(function(c){self.data[c]=lsGet("fdc_local_"+c,[]);});
-    setSync("warn",msg); render();
+  stop: function(){
+    this.unsubs.forEach(function(u){try{u();}catch(e){}});
+    this.unsubs=[];
+    this.data={vehicles:[],fuel_records:[],service_records:[]};
   },
   save: async function(col,obj){
     obj = Object.assign({}, obj); var id = obj.id; delete obj.id;
@@ -388,13 +436,13 @@ function render(){
   $$("#nav button").forEach(function(b){b.classList.toggle("on",b.dataset.view===state.view);});
   var alerts=collectAlerts(), b=$("#alertBadge");
   b.hidden=!alerts.length; b.textContent=alerts.length;
-  $("#whoName").textContent=userName||"—";
+  $("#whoName").textContent=userName||"—";$("#whoEmail").textContent=currentUser?currentUser.email:"";
   var m=$("#main");
   if(state.view==="vehicles") m.innerHTML=viewVehicles(alerts);
   else if(state.view==="fueling") m.innerHTML=viewFueling();
   else m.innerHTML=viewServicing();
   if(state.drawerId) renderDrawer();
-  if(!notifiedOnce && Store.mode!=="local"){notifiedOnce=true;maybeNotify(alerts);}
+  if(!notifiedOnce && currentUser && Store.data.vehicles.length){notifiedOnce=true;maybeNotify(alerts);}
 }
 
 /* ---------- Vehicle Details view ---------- */
@@ -703,19 +751,116 @@ function openSettings(){
   modalCtx={type:"settings"};
   var perm=("Notification" in window)?Notification.permission:"unsupported";
   openModal("Settings",
-    '<div class="grid">'+fld("Your name (shown on records)","name",userName)+
+    '<div class="grid">'+fld("Your name (shown on records)","name",userName)+'<div class="hint">Signed in as <b>'+esc(currentUser?currentUser.email:"")+'</b> · <button type="button" class="linkbtn" data-act="changePw">Send password reset email</button></div>'+
     fld("Reminder window (days before expiry)","remindDays",settings.remindDays,"number")+
     fld("Currency label","currency",settings.currency)+
     fld("SharePoint site / library URL","spBase",settings.spBase,"url","",' placeholder="https://yourcompany.sharepoint.com/sites/Fleet/Shared Documents"')+
     '<div><div class="hint" style="margin-bottom:6px">Desktop notifications: <b>'+perm+'</b></div>'+(perm==="default"?'<button type="button" class="btn sm" data-act="enableNotif">Enable desktop notifications</button>':"")+'</div>'+
     '<label>Theme<select name="theme">'+opts([["","System"],["light","Light"],["dark","Dark"]],lsGet("fdc_theme",""))+'</select></label>'+
-    '<div class="hint">Data: '+(Store.mode==="cloud"?"shared cloud database (Firebase)":"this browser only")+'.</div></div>');
+    '</div>');
 }
 function applyTheme(){var t=lsGet("fdc_theme","");if(t)document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}
-function askName(){
-  modalCtx={type:"name"};
-  openModal("Welcome",'<p style="margin-top:0">Enter your name so records show who added them.</p>'+fld("Your name","name",""),{submit:"Continue"});
+
+/* ================= AUTHENTICATION (Firebase email + password) ================= */
+var authMode="login";
+function authErr(e){
+  var c=(e&&e.code)||"";
+  var map={
+    "auth/invalid-email":"That email address is not valid.",
+    "auth/missing-password":"Please enter your password.",
+    "auth/invalid-credential":"Incorrect email or password.",
+    "auth/invalid-login-credentials":"Incorrect email or password.",
+    "auth/wrong-password":"Incorrect email or password.",
+    "auth/user-not-found":"No account found with that email. Register first.",
+    "auth/user-disabled":"This account has been disabled. Contact the administrator.",
+    "auth/email-already-in-use":"An account with this email already exists. Sign in instead.",
+    "auth/weak-password":"Password is too weak — use at least 8 characters.",
+    "auth/too-many-requests":"Too many attempts. Please wait a few minutes and try again.",
+    "auth/network-request-failed":"Can't reach the server. Check your internet connection.",
+    "auth/operation-not-allowed":"Email/password sign-in is not enabled yet. Enable it in Firebase Console → Authentication → Sign-in method.",
+    "auth/configuration-not-found":"Email/password sign-in is not enabled yet. Enable it in Firebase Console → Authentication → Sign-in method."
+  };
+  return map[c]||(e&&e.message)||"Something went wrong.";
 }
+function authMsg(text,ok){var m=$("#authMsg");m.hidden=!text;m.textContent=text||"";m.className="auth-msg"+(ok?" ok":"");}
+function setAuthMode(mode){
+  authMode=mode;
+  $$("[data-auth]").forEach(function(b){b.classList.toggle("on",b.dataset.auth===mode);});
+  $$("#auth [data-only]").forEach(function(el){el.hidden=el.dataset.only!==mode;});
+  $("#authSubmit").textContent=mode==="login"?"Sign in":"Create account";
+  $('#authForm [name=password]').autocomplete=mode==="login"?"current-password":"new-password";
+  authMsg("");
+}
+function showAuth(show){
+  $("#auth").hidden=!show; document.body.classList.toggle("locked",show);
+  if(show){closeModal();closeDrawer();setTimeout(function(){var f=$(authMode==="register"?'#authForm [name=name]':'#authForm [name=email]');if(f)f.focus();},50);}
+}
+function saveProfile(){
+  if(!currentUser||!Store.db) return;
+  Store.db.collection("users").doc(currentUser.uid).set({name:userName,email:currentUser.email,lastLogin:Date.now()},{merge:true}).catch(function(e){console.warn("profile",e);});
+}
+var Auth={
+  init:function(){
+    setAuthMode("login");
+    var ready=function(){$("#authLoading").hidden=true;$("#authForm").hidden=false;};
+    if(!window.firebase){ready();showAuth(true);authMsg("Could not load the sign-in service. Check your internet connection and reload the page.");$("#authSubmit").disabled=true;setSync("crit","Offline");return;}
+    try{ firebase.initializeApp(FIREBASE_CONFIG); }catch(e){ console.warn(e); }
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
+    Store.db=firebase.firestore();
+    firebase.auth().onAuthStateChanged(function(user){
+      if(user && user.isAnonymous){ firebase.auth().signOut(); return; } // old anonymous sessions from the previous version
+      currentUser=user||null; ready();
+      if(user){
+        userName=user.displayName||user.email.split("@")[0];
+        showAuth(false); Store.start(); saveProfile(); render();
+      }else{
+        userName=""; Store.stop(); notifiedOnce=false; state.drawerId=null; render(); showAuth(true); setSync("","Signed out");
+      }
+    });
+  },
+  submit:async function(f){
+    var email=f.email.value.trim().toLowerCase(), pw=f.password.value;
+    if(!email||!pw){authMsg("Enter your email and password.");return;}
+    if(authMode==="login"){
+      await firebase.auth().signInWithEmailAndPassword(email,pw);
+      return true;
+    }
+    var name=f.name.value.trim();
+    if(!name){authMsg("Please enter your full name.");return;}
+    if(!/^\S+@\S+\.\S+$/.test(email)){authMsg("That email address is not valid.");return;}
+    if(ALLOWED_EMAIL_DOMAINS.length && ALLOWED_EMAIL_DOMAINS.indexOf(email.split("@")[1])<0){authMsg("Please register with your company email ("+ALLOWED_EMAIL_DOMAINS.map(function(d){return "@"+d;}).join(", ")+").");return;}
+    if(pw.length<8||!/[A-Za-z]/.test(pw)||!/\d/.test(pw)){authMsg("Password must be at least 8 characters and include a letter and a number.");return;}
+    if(pw!==f.password2.value){authMsg("Passwords do not match.");return;}
+    var cred=await firebase.auth().createUserWithEmailAndPassword(email,pw);
+    await cred.user.updateProfile({displayName:name});
+    userName=name; currentUser=cred.user; saveProfile(); render();
+    cred.user.sendEmailVerification().catch(function(){});
+    toast("Account created — welcome, "+name);
+    return true;
+  },
+  forgot:async function(){
+    var email=$('#authForm [name=email]').value.trim();
+    if(!email){authMsg("Type your email address above, then click “Forgot password?” again.");return;}
+    try{await firebase.auth().sendPasswordResetEmail(email);authMsg("If an account exists for "+email+", a password reset link has been sent. Check your inbox (and spam).",true);}
+    catch(e){authMsg(authErr(e));}
+  }
+};
+document.addEventListener("submit",async function(e){
+  if(e.target.id!=="authForm") return; e.preventDefault();
+  var b=$("#authSubmit"); b.disabled=true; authMsg("");
+  var label=b.textContent; b.textContent=authMode==="login"?"Signing in…":"Creating account…";
+  try{ if(await Auth.submit(e.target)){ e.target.password.value=""; e.target.password2.value=""; } }
+  catch(err){ console.warn(err); authMsg(authErr(err)); }
+  finally{ b.disabled=false; b.textContent=label; }
+});
+document.addEventListener("click",function(e){
+  var t=e.target.closest("[data-auth]"); if(t){setAuthMode(t.dataset.auth);return;}
+  var a=e.target.closest("[data-act]"); if(!a) return;
+  if(a.dataset.act==="togglePw"){e.preventDefault();var i=a.previousElementSibling;i.type=i.type==="password"?"text":"password";a.textContent=i.type==="password"?"Show":"Hide";}
+  if(a.dataset.act==="forgotPw") Auth.forgot();
+  if(a.dataset.act==="signOut") firebase.auth().signOut().then(function(){toast("Signed out");});
+  if(a.dataset.act==="changePw" && currentUser) firebase.auth().sendPasswordResetEmail(currentUser.email).then(function(){toast("Reset link sent to "+currentUser.email);}).catch(function(err){toast(authErr(err));});
+});
 
 /* ================= EVENTS ================= */
 document.addEventListener("click",function(e){
@@ -775,9 +920,9 @@ document.addEventListener("submit",async function(e){
       case "fuel": await saveFuel(f); break;
       case "service": await saveService(f); break;
       case "confirm": var fn=modalCtx.fn; closeModal(); await fn(); break;
-      case "name": var n=f.name.value.trim(); if(!n){toast("Please enter your name");break;} userName=n; lsSet("fdc_name_v2",n); closeModal(); render(); break;
       case "settings":
-        var o=formToObj(f); userName=o.name||userName; lsSet("fdc_name_v2",userName);
+        var o=formToObj(f);
+        if(o.name&&o.name!==userName&&currentUser){await currentUser.updateProfile({displayName:o.name});userName=o.name;saveProfile();}
         settings.remindDays=Math.max(1,Math.round(num(o.remindDays))||30); settings.currency=o.currency||"Rf"; settings.spBase=o.spBase||"";
         lsSet("fdc_settings",settings); lsSet("fdc_theme",o.theme||""); applyTheme(); closeModal(); render(); toast("Settings saved"); break;
     }
@@ -789,7 +934,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"){if(!$("#ove
 /* ================= BOOT ================= */
 applyTheme();
 render();
-Store.init().then(function(){render(); if(!userName) askName();});
+Auth.init();
 </script>
 </body>
 </html>
