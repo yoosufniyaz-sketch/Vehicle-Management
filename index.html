@@ -177,7 +177,13 @@ legend{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:1
 
 .who{display:flex;flex-direction:column;min-width:0}
 .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mobile-out{display:none}
+.mobile-tools{display:none}
+.theme-toggle{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);border-radius:99px;padding:5px 12px 5px 8px;font-size:12.5px;align-self:flex-start}
+.theme-toggle:hover{border-color:var(--steel-soft)}
+.theme-toggle .ti-sun,.theme-toggle .ti-moon{font-size:14px;line-height:1;width:16px;text-align:center}
+:root[data-mode="light"] .theme-toggle .ti-sun,:root[data-mode="dark"] .theme-toggle .ti-moon{display:none}
+.theme-toggle.icon-only{padding:6px 9px}.theme-toggle.icon-only .tl{display:none}
+.auth-theme{position:absolute;top:16px;right:16px}
 /* Auth screen */
 .auth{position:fixed;inset:0;z-index:100;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:24px 16px;overflow:auto}
 .auth[hidden]{display:none}
@@ -194,7 +200,7 @@ body.locked .shell{visibility:hidden}
 .pw{position:relative}.pw input{padding-right:58px}
 .pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--accent);font-size:12px;padding:4px 6px}
 @media (max-width:900px){
-  .mobile-out{display:inline-flex;margin-left:auto;flex:none}
+  .mobile-tools{display:inline-flex;gap:8px;align-items:center;margin-left:auto;flex:none}
   .shell{grid-template-columns:1fr}
   .side{position:sticky;height:auto;flex-direction:row;align-items:center;padding:10px 12px;gap:10px;z-index:30;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
   .brand{padding:0 6px 0 0;flex:none}.brand .sub{display:none}
@@ -216,7 +222,7 @@ body.locked .shell{visibility:hidden}
 <body class="locked">
 <div class="shell">
   <aside class="side">
-    <div class="brand"><div class="mark">FDC Vehicle<br>Management</div><div class="sub">Corporate Fleet Portal</div></div>
+    <div class="brand"><div class="mark">FDC Vehicle<br>Management</div></div>
     <nav class="nav" id="nav">
       <button data-view="vehicles" class="on"><span class="num">01</span>Vehicle Details<span class="badge" id="alertBadge" hidden></span></button>
       <button data-view="fueling"><span class="num">02</span>Fueling</button>
@@ -225,18 +231,20 @@ body.locked .shell{visibility:hidden}
     <div class="side-foot">
       <div class="sync"><span class="dot" id="syncDot"></span><span id="syncText">Connecting…</span></div>
       <div class="who"><b id="whoName">—</b><span id="whoEmail" class="hint"></span></div>
+      <button type="button" class="theme-toggle" data-act="toggleTheme" aria-label="Switch light / dark mode" title="Switch light / dark mode"><span class="ti-sun">☀</span><span class="ti-moon">☾</span><span class="tl"></span></button>
       <button class="linkbtn" data-act="settings">Settings &amp; notifications</button>
       <button class="linkbtn" data-act="signOut">Sign out</button>
     </div>
-    <button class="btn sm mobile-out" data-act="signOut">Sign out</button>
+    <span class="mobile-tools"><button type="button" class="theme-toggle icon-only" data-act="toggleTheme" aria-label="Switch light / dark mode" title="Switch light / dark mode"><span class="ti-sun">☀</span><span class="ti-moon">☾</span><span class="tl"></span></button><button class="btn sm" data-act="signOut">Sign out</button></span>
   </aside>
   <main id="main"></main>
 </div>
 
 <!-- ============ LOGIN / REGISTER ============ -->
 <section class="auth" id="auth">
+  <button type="button" class="theme-toggle auth-theme" data-act="toggleTheme" aria-label="Switch light / dark mode" title="Switch light / dark mode"><span class="ti-sun">☀</span><span class="ti-moon">☾</span><span class="tl"></span></button>
   <div class="auth-card">
-    <div class="auth-brand"><div class="mark">FDC Vehicle Management</div><div class="sub">Corporate Fleet Portal</div></div>
+    <div class="auth-brand"><div class="mark">FDC Vehicle Management</div></div>
     <div class="tabs auth-tabs" role="tablist">
       <button type="button" data-auth="login" class="on">Sign in</button>
       <button type="button" data-auth="register">Register</button>
@@ -759,7 +767,17 @@ function openSettings(){
     '<label>Theme<select name="theme">'+opts([["","System"],["light","Light"],["dark","Dark"]],lsGet("fdc_theme",""))+'</select></label>'+
     '</div>');
 }
-function applyTheme(){var t=lsGet("fdc_theme","");if(t)document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}
+var darkMQ=window.matchMedia?window.matchMedia("(prefers-color-scheme: dark)"):null;
+function effectiveTheme(){var t=lsGet("fdc_theme","");return t||(darkMQ&&darkMQ.matches?"dark":"light");}
+function applyTheme(){
+  var t=lsGet("fdc_theme",""),root=document.documentElement;
+  if(t)root.setAttribute("data-theme",t);else root.removeAttribute("data-theme");
+  var eff=effectiveTheme(); root.setAttribute("data-mode",eff);
+  // button shows the mode you will switch TO
+  $$(".theme-toggle .tl").forEach(function(el){el.textContent=eff==="dark"?"Light mode":"Dark mode";});
+}
+function toggleTheme(){lsSet("fdc_theme",effectiveTheme()==="dark"?"light":"dark");applyTheme();}
+if(darkMQ&&darkMQ.addEventListener)darkMQ.addEventListener("change",applyTheme);
 
 /* ================= AUTHENTICATION (Firebase email + password) ================= */
 var authMode="login";
@@ -857,6 +875,7 @@ document.addEventListener("click",function(e){
   var t=e.target.closest("[data-auth]"); if(t){setAuthMode(t.dataset.auth);return;}
   var a=e.target.closest("[data-act]"); if(!a) return;
   if(a.dataset.act==="togglePw"){e.preventDefault();var i=a.previousElementSibling;i.type=i.type==="password"?"text":"password";a.textContent=i.type==="password"?"Show":"Hide";}
+  if(a.dataset.act==="toggleTheme") toggleTheme();
   if(a.dataset.act==="forgotPw") Auth.forgot();
   if(a.dataset.act==="signOut") firebase.auth().signOut().then(function(){toast("Signed out");});
   if(a.dataset.act==="changePw" && currentUser) firebase.auth().sendPasswordResetEmail(currentUser.email).then(function(){toast("Reset link sent to "+currentUser.email);}).catch(function(err){toast(authErr(err));});
