@@ -15,6 +15,7 @@
   --accent:#14406b;--accent-strong:#0d2f4e;--accent-soft:#e6ecf1;--on-accent:#ffffff;
   --good:#2f8f5b;--good-soft:#e6f4ec;--warn:#a9760a;--warn-soft:#fbf1dd;--critical:#b3261e;--critical-soft:#fbe9e7;
   --shadow:0 1px 2px rgba(16,24,38,.06),0 4px 14px rgba(16,24,38,.06);
+  --petrol:#2a78d6;--diesel:#eb6834;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --ink:#eef1f5;--paper:#0e131a;--surface:#161d27;--surface-2:#1b2330;
@@ -22,6 +23,7 @@
   --accent:#7fb0e0;--accent-strong:#a9cbef;--accent-soft:#1c2c40;--on-accent:#0b1522;
   --good:#5cc08a;--good-soft:#16301f;--warn:#e0ac3c;--warn-soft:#33280f;--critical:#f07a70;--critical-soft:#3a1a18;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+  --petrol:#3987e5;--diesel:#d95926;
 }}
 :root[data-theme="dark"]{
   --ink:#eef1f5;--paper:#0e131a;--surface:#161d27;--surface-2:#1b2330;
@@ -29,6 +31,7 @@
   --accent:#7fb0e0;--accent-strong:#a9cbef;--accent-soft:#1c2c40;--on-accent:#0b1522;
   --good:#5cc08a;--good-soft:#16301f;--warn:#e0ac3c;--warn-soft:#33280f;--critical:#f07a70;--critical-soft:#3a1a18;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+  --petrol:#3987e5;--diesel:#d95926;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -45,10 +48,10 @@ a{color:var(--accent)}
 .brand .mark{font-family:"Oswald";font-weight:700;font-size:19px;text-transform:uppercase;color:var(--accent-strong);letter-spacing:.03em;line-height:1.1}
 .brand .sub{font-size:11px;text-transform:uppercase;color:var(--steel);letter-spacing:.12em;margin-top:3px}
 .nav{display:flex;flex-direction:column;gap:3px}
-.nav button{display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--steel);padding:10px 10px;border-radius:8px;text-align:left;font-weight:500}
+.nav button{display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--steel);padding:10px 12px;border-radius:8px;text-align:left;font-weight:500}
 .nav button:hover{background:var(--surface-2);color:var(--ink)}
 .nav button.on{background:var(--accent-soft);color:var(--accent-strong)}
-.nav .num{font-family:"IBM Plex Mono";font-size:11px;color:var(--steel-soft);width:18px}
+
 .nav .badge{margin-left:auto}
 .side-foot{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:12px;color:var(--steel);display:flex;flex-direction:column;gap:8px}
 .sync{display:flex;align-items:center;gap:7px}
@@ -119,6 +122,41 @@ tr:last-child td{border-bottom:0}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td .sub{color:var(--steel-soft);font-size:12px}
 
+.bar{height:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:5px;min-width:90px}
+.bar i{display:block;height:100%;background:var(--good)}.bar.warn i{background:var(--warn)}.bar.crit i{background:var(--critical)}
+tr.tot td{background:var(--surface-2)}
+.reqbox{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:13.5px;font-variant-numeric:tabular-nums}
+.reqbox span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--steel)}
+.reqbox.over{background:var(--critical-soft)}
+@media (max-width:560px){.reqbox{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rep-filters label.inl{flex-direction:row;align-items:center;gap:6px}
+.rep-filters input[type=date]{width:auto}
+.rep-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,8fr);gap:18px}
+.rep-grid .panel{margin-bottom:18px}
+.chart-card .panel-h{flex-wrap:wrap}
+.pie-wrap{display:flex;align-items:center;justify-content:center;gap:24px;padding:18px 16px;flex-wrap:wrap}
+.pie-svg,.line-wrap{position:relative}
+.line-wrap{padding:10px 12px 6px}
+.pie-total{font-family:"Oswald";font-size:28px;font-weight:600;fill:var(--ink)}
+.pie-sub{font-size:12px;fill:var(--steel)}
+.pie-legend{display:flex;flex-direction:column;gap:14px}
+.pl-row{display:flex;gap:10px;align-items:flex-start}
+.pl-name{font-weight:600}.pl-pct{color:var(--steel);font-weight:500;margin-left:4px}
+.pl-val{font-family:"Oswald";font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.swatch.lg{width:14px;height:14px;margin-top:3px}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--steel)}
+.line-wrap svg{display:block;overflow:visible}
+.line-wrap .grid{stroke:var(--line);stroke-width:1}.line-wrap .grid.base{stroke:var(--line-strong)}
+.line-wrap .ax{font-size:11px;fill:var(--steel-soft);font-variant-numeric:tabular-nums}
+.line-wrap .endlbl{font-size:12px;fill:var(--steel);font-weight:600}
+.line-wrap .xhair{stroke:var(--steel-soft);stroke-width:1;stroke-dasharray:3 3}
+.slice{cursor:pointer;transition:opacity .12s}
+.tip{position:absolute;z-index:5;pointer-events:none;background:var(--surface);border:1px solid var(--line-strong);box-shadow:var(--shadow);border-radius:8px;padding:8px 10px;font-size:12.5px;min-width:150px;color:var(--ink)}
+.tip .trow{display:flex;align-items:center;gap:4px;margin-top:4px}.tip .trow span{margin-left:auto;padding-left:14px;font-variant-numeric:tabular-nums;font-weight:600}
+.tip .trow.tt{border-top:1px solid var(--line);padding-top:4px}
+@media (max-width:1100px){.rep-grid{grid-template-columns:minmax(0,1fr)}}
+@media print{.side,.toolbar,.top .row,.theme-toggle{display:none!important}.shell{display:block}main{padding:0}.panel,.kpi{break-inside:avoid}}
 .tabs{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px}
 .tabs button{border:0;background:none;padding:6px 14px;border-radius:6px;color:var(--steel);font-weight:500}
 .tabs button.on{background:var(--accent);color:var(--on-accent)}
@@ -181,6 +219,13 @@ legend{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:1
 .toast.show{opacity:1}
 
 .who{display:flex;flex-direction:column;min-width:0}
+.role-badge{align-self:flex-start;margin-top:4px}
+body:not(.is-admin) .admin-only,
+body:not(.is-admin) [data-act="addVehicle"],body:not(.is-admin) [data-act="addFuel"],body:not(.is-admin) [data-act="addReq"],
+body:not(.is-admin) [data-act="addReqForVeh"],body:not(.is-admin) [data-act="addReqFromFuel"],body:not(.is-admin) [data-act="addPeriodic"],
+body:not(.is-admin) [data-act="addIncident"],body:not(.is-admin) [data-act="delVehicle"],body:not(.is-admin) [data-act="delFuel"],
+body:not(.is-admin) [data-act="delReq"],body:not(.is-admin) [data-act="delService"]{display:none!important}
+.member-note{display:none}body:not(.is-admin) .member-note{display:inline}
 .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mobile-tools{display:none}
 .theme-toggle{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);border-radius:99px;padding:5px 12px 5px 8px;font-size:12.5px;align-self:flex-start}
@@ -209,7 +254,7 @@ body.locked .shell{visibility:hidden}
   .shell{grid-template-columns:1fr}
   .side{position:sticky;height:auto;flex-direction:row;align-items:center;padding:10px 12px;gap:10px;z-index:30;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
   .brand{padding:0 6px 0 0;flex:none}.brand .sub{display:none}
-  .nav{flex-direction:row}.nav .num{display:none}
+  .nav{flex-direction:row}
   .nav button{white-space:nowrap;padding:8px 10px}
   .side-foot{display:none}
   main{padding:18px 16px 50px}
@@ -229,13 +274,15 @@ body.locked .shell{visibility:hidden}
   <aside class="side">
     <div class="brand"><div class="mark">FDC Vehicle<br>Management</div></div>
     <nav class="nav" id="nav">
-      <button data-view="vehicles" class="on"><span class="num">01</span>Vehicle Details<span class="badge" id="alertBadge" hidden></span></button>
-      <button data-view="fueling"><span class="num">02</span>Fueling</button>
-      <button data-view="servicing"><span class="num">03</span>Servicing</button>
+      <button data-view="vehicles" class="on">Vehicle Details<span class="badge" id="alertBadge" hidden></span></button>
+      <button data-view="fueling">Fueling</button>
+      <button data-view="servicing">Servicing</button>
+      <button data-view="reports">Reports</button>
+      <button data-view="users" class="admin-only">User Management</button>
     </nav>
     <div class="side-foot">
       <div class="sync"><span class="dot" id="syncDot"></span><span id="syncText">Connecting…</span></div>
-      <div class="who"><b id="whoName">—</b><span id="whoEmail" class="hint"></span></div>
+      <div class="who"><b id="whoName">—</b><span id="whoEmail" class="hint"></span><span id="whoRole" class="pill role-badge"></span></div>
       <button type="button" class="theme-toggle" data-act="toggleTheme" aria-label="Switch light / dark mode" title="Switch light / dark mode"><span class="ti-sun">☀</span><span class="ti-moon">☾</span><span class="tl"></span></button>
       <button class="linkbtn" data-act="settings">Settings &amp; notifications</button>
       <button class="linkbtn" data-act="signOut">Sign out</button>
@@ -292,7 +339,7 @@ var FIREBASE_CONFIG = {
   messagingSenderId: "681628225367",
   appId: "1:681628225367:web:b4cdc4866bd08a31487812"
 };
-var COLS = ["vehicles","fuel_records","service_records"];
+var COLS = ["vehicles","fuel_records","service_records","fuel_requisitions","users"];
 var VEHICLE_TYPES = ["Motorcycle","Car","Doublecab","Pick Up","Van","Speed Boat"];
 var FUEL_TYPES = ["Petrol","Diesel"];
 var STATUSES = ["Active","In service","Inactive"];
@@ -312,13 +359,21 @@ var settings = Object.assign({remindDays:30, spBase:"", currency:"Rf"}, lsGet("f
 /* Optional: only allow sign-up with these email domains, e.g. ["fdc.mv"]. Empty = any email.
    (Also enforce this in your Firestore security rules — see notes.) */
 var ALLOWED_EMAIL_DOMAINS = [];
+/* Owners are always admins and their role can't be changed in the app.
+   Keep this list in sync with the Firestore security rules. */
+var OWNER_EMAILS = ["yoosuf.niyaz@fdc.mv"];
+function isOwnerEmail(e){return OWNER_EMAILS.indexOf(String(e||"").toLowerCase())>=0;}
+function myProfile(){return currentUser?Store.data.users.find(function(u){return u.id===currentUser.uid;}):null;}
+function isAdmin(){if(!currentUser)return false;if(isOwnerEmail(currentUser.email))return true;var p=myProfile();return !!p&&p.role==="admin";}
+function roleOf(u){return isOwnerEmail(u.email)?"owner":(u.role==="admin"?"admin":"member");}
+var ADMIN_ACTS=["addVehicle","addFuel","addReq","addReqForVeh","addReqFromFuel","addPeriodic","addIncident","delVehicle","delFuel","delReq","delService","setRole"];
 var currentUser = null;
 var userName = "";
 
 /* ================= STORE ================= */
 var Store = {
   mode:"local", db:null,
-  data:{vehicles:[],fuel_records:[],service_records:[]},
+  data:{vehicles:[],fuel_records:[],service_records:[],fuel_requisitions:[],users:[]},
   unsubs:[],
   /* Start live listeners — called only after a successful email/password sign-in */
   start: function(){
@@ -341,7 +396,7 @@ var Store = {
   stop: function(){
     this.unsubs.forEach(function(u){try{u();}catch(e){}});
     this.unsubs=[];
-    this.data={vehicles:[],fuel_records:[],service_records:[]};
+    this.data={vehicles:[],fuel_records:[],service_records:[],fuel_requisitions:[],users:[]};
   },
   save: async function(col,obj){
     obj = Object.assign({}, obj); var id = obj.id; delete obj.id;
@@ -401,7 +456,7 @@ function vehicleOpts(sel){return '<option value="">Select vehicle…</option>'+s
 function get(o,path){return path.split(".").reduce(function(a,k){return a==null?undefined:a[k];},o);}
 function fld(label,name,val,type,cls,extra){
   type=type||"text";
-  return '<label class="'+(cls||"")+'">'+label+'<input type="'+type+'" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(type==="number"?' step="0.01" min="0"':"")+(extra||"")+'></label>';
+  return '<label class="'+(cls||"")+'"><span>'+label+'</span><input type="'+type+'" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(type==="number"?' step="0.01" min="0"':"")+(extra||"")+'></label>';
 }
 function formToObj(form){
   var o={};
@@ -444,17 +499,24 @@ function maybeNotify(alerts){
 }
 
 /* ================= STATE & RENDER ================= */
-var state = {view:"vehicles", q:"", ftype:"", ffuel:"", fstatus:"", svcTab:"periodic", fuelVeh:"", fuelMonth:"", svcVeh:"", drawerId:null};
+var state = {view:"vehicles", q:"", ftype:"", ffuel:"", fstatus:"", svcTab:"periodic", repPreset:"6m", repFrom:"", repTo:"", repVeh:"", repGran:"", fuelVeh:"", fuelMonth:"", fuelFund:"", fuelReq:"", fuelTab:"log", svcVeh:"", drawerId:null};
 var notifiedOnce=false;
 function render(){
   $$("#nav button").forEach(function(b){b.classList.toggle("on",b.dataset.view===state.view);});
   var alerts=collectAlerts(), b=$("#alertBadge");
   b.hidden=!alerts.length; b.textContent=alerts.length;
   $("#whoName").textContent=userName||"—";$("#whoEmail").textContent=currentUser?currentUser.email:"";
+  var admin=isAdmin(); document.body.classList.toggle("is-admin",admin);
+  var rb=$("#whoRole"); rb.hidden=!currentUser; rb.textContent=admin?"Admin":"Member"; rb.className="pill role-badge "+(admin?"acc":"");
+  if(state.view==="users"&&!admin) state.view="vehicles";
+  $$("#nav button").forEach(function(b){b.classList.toggle("on",b.dataset.view===state.view);});
   var m=$("#main");
   if(state.view==="vehicles") m.innerHTML=viewVehicles(alerts);
   else if(state.view==="fueling") m.innerHTML=viewFueling();
+  else if(state.view==="users") m.innerHTML=viewUsers();
+  else if(state.view==="reports") m.innerHTML=viewReports();
   else m.innerHTML=viewServicing();
+  if(state.view==="reports") wireReports();
   if(state.drawerId) renderDrawer();
   if(!notifiedOnce && currentUser && Store.data.vehicles.length){notifiedOnce=true;maybeNotify(alerts);}
 }
@@ -540,6 +602,8 @@ function renderDrawer(){
     '</div>';
   }).join("")+
   (v.notes?'<div class="mini"><h3>Notes</h3><div style="padding:10px 14px;white-space:pre-wrap">'+esc(v.notes)+'</div></div>':"")+
+  (function(){var rs=Store.data.fuel_requisitions.filter(function(r){return r.vehicleId===v.id&&!r.closed;}).sort(byDateDesc);
+    return '<div class="mini"><h3>Fuel funding (PR / Petty Cash)</h3>'+(rs.length?'<div class="tablewrap"><table><tr><th>Type</th><th>Ref no.</th><th>Fuel</th><th class="n">Value</th><th class="n">Balance</th><th class="n">Balance (L)</th><th>Status</th></tr>'+rs.map(function(rq){var st=reqStatus(rq);return '<tr><td>'+esc(fundShort(rq.kind))+'</td><td class="mono">'+esc(rq.refNo)+'</td><td>'+esc(rq.fuelType)+'</td><td class="n">'+money(rq.amount)+'</td><td class="n"><b>'+money(Math.max(0,reqBalance(rq)))+'</b>'+balBar(rq)+'</td><td class="n"><b>'+(hasL(rq)?fmtL(Math.max(0,reqBalanceL(rq))):"—")+'</b><div class="sub">of '+(hasL(rq)?fmtL(rq.litres):"—")+'</div></td><td><span class="pill '+st.k+'">'+st.t+'</span></td></tr>';}).join("")+'</table></div>':'<div class="empty">No active requisitions. <button class="linkbtn" data-act="addReqForVeh" data-id="'+esc(v.id)+'">Add PR / Petty Cash</button></div>')+'</div>';})()+
   '<div class="mini"><h3>Recent fueling</h3>'+(fuel.length?'<div class="tablewrap"><table><tr><th>Date</th><th class="n">Litres</th><th class="n">Cost</th><th class="n">Odometer</th></tr>'+fuel.slice(0,5).map(function(r){return '<tr><td>'+fmtDate(r.date)+'</td><td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+money(r.total)+'</td><td class="n">'+(r.odometer?num(r.odometer).toLocaleString():"—")+'</td></tr>';}).join("")+'</table></div>':'<div class="empty">No fuel entries.</div>')+'</div>'+
   '<div class="mini"><h3>Recent servicing</h3>'+(svc.length?'<div class="tablewrap"><table><tr><th>Date</th><th>Kind</th><th>Detail</th><th class="n">Cost</th></tr>'+svc.slice(0,6).map(function(r){var inc=r.kind==="incident";return '<tr><td>'+fmtDate(r.date)+'</td><td>'+(inc?'<span class="pill warn">Incidental</span>':'<span class="pill acc">Periodic</span>')+'</td><td>'+esc(inc?r.issue:(r.serviceType||r.type||""))+'</td><td class="n">'+(r.cost?money(r.cost):"—")+'</td></tr>';}).join("")+'</table></div>':'<div class="empty">No service records.</div>')+'</div>'+
   '</div>';
@@ -548,26 +612,276 @@ function renderDrawer(){
 function spec(l,v){return '<div><span>'+l+'</span>'+esc(v||"—")+'</div>';}
 function byDateDesc(a,b){return String(b.date||"").localeCompare(String(a.date||""));}
 
+/* ---------- Fuel requisitions (PR / Petty Cash) ---------- */
+var FUND_TYPES=[["PR","PR (Purchase Requisition)"],["Petty Cash","Petty Cash"]];
+function fundShort(k){return k==="PR"?"PR":"Petty Cash";}
+function reqById(id){return Store.data.fuel_requisitions.find(function(r){return r.id===id;});}
+function reqUsed(rq,excludeFuelId){return Store.data.fuel_records.reduce(function(s,f){return f.requisitionId===rq.id&&f.id!==excludeFuelId?s+num(f.total):s;},0);}
+function reqBalance(rq,excludeFuelId){return Math.round((num(rq.amount)-reqUsed(rq,excludeFuelId))*100)/100;}
+/* Litre balance (requisitions created before litres were added have no litre limit) */
+function hasL(rq){return num(rq.litres)>0;}
+function reqUsedL(rq,excludeFuelId){return Store.data.fuel_records.reduce(function(s,f){return f.requisitionId===rq.id&&f.id!==excludeFuelId?s+num(f.litres):s;},0);}
+function reqBalanceL(rq,excludeFuelId){return Math.round((num(rq.litres)-reqUsedL(rq,excludeFuelId))*100)/100;}
+function fmtL(x){return num(x).toLocaleString("en-US",{maximumFractionDigits:2})+" L";}
+function reqPct(rq){var a=num(rq.amount)?reqBalance(rq)/num(rq.amount):1, l=hasL(rq)?reqBalanceL(rq)/num(rq.litres):1;return Math.max(0,Math.min(1,a,l));}
+function reqStatus(rq){
+  if(rq.closed) return {k:"",t:"Closed"};
+  if(reqBalance(rq)<=0||(hasL(rq)&&reqBalanceL(rq)<=0)) return {k:"crit",t:"Limit reached"};
+  if(reqPct(rq)<0.2) return {k:"warn",t:"Low balance"};
+  return {k:"good",t:"Active"};
+}
+function reqLabel(rq){return (rq.kind==="PR"?"PR ":"PC ")+(rq.refNo||"—");}
+/* Requisitions that can still fund a fill for this vehicle + fuel type + funding type, oldest first */
+function usableReqs(vehicleId,fuelType,kind,excludeFuelId,keepId){
+  return Store.data.fuel_requisitions.filter(function(rq){
+    if(rq.id===keepId) return true;
+    return !rq.closed&&rq.vehicleId===vehicleId&&rq.fuelType===fuelType&&rq.kind===kind&&reqBalance(rq,excludeFuelId)>0&&(!hasL(rq)||reqBalanceL(rq,excludeFuelId)>0);
+  }).sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""));});
+}
+function balBar(rq){
+  var pct=reqPct(rq)*100,st=reqStatus(rq);
+  return '<div class="bar '+st.k+'"><i style="width:'+pct.toFixed(1)+'%"></i></div>';
+}
+
 /* ---------- Fueling view ---------- */
 function viewFueling(){
+  var tab=state.fuelTab||"log";
   var all=Store.data.fuel_records.slice().sort(byDateDesc);
-  var list=all.filter(function(r){return (!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelMonth||String(r.date||"").slice(0,7)===state.fuelMonth);});
+  var reqs=Store.data.fuel_requisitions.slice().sort(byDateDesc);
   var mon=todayISO().slice(0,7), thisM=all.filter(function(r){return String(r.date||"").slice(0,7)===mon;});
-  var L=sum(thisM,"litres"),C=sum(thisM,"total"), fL=sum(list,"litres"),fC=sum(list,"total");
-  var months=Array.from(new Set(all.map(function(r){return String(r.date||"").slice(0,7);}).filter(Boolean))).sort().reverse();
-  var h='<div class="top"><div><h1>Fueling</h1><p>Fuel log for every vehicle — litres, cost and odometer.</p></div><button class="btn primary" data-act="addFuel">+ Add Fuel Entry</button></div>'+
-  '<div class="kpis">'+kpi("Litres this month",L.toLocaleString("en-US",{maximumFractionDigits:1}),"",new Date().toLocaleDateString("en-GB",{month:"long",year:"numeric"}))+
-    kpi("Fuel cost this month",money0(C),"",thisM.length+" entries")+
-    kpi("Avg price / litre",L?money(C/L):"—","","This month")+
-    kpi("Filtered total",money0(fC),"",fL.toLocaleString("en-US",{maximumFractionDigits:1})+" L · "+list.length+" entries")+'</div>'+
-  '<div class="toolbar"><select data-bind="fuelVeh">'+vehicleOpts(state.fuelVeh).replace("Select vehicle…","All vehicles")+'</select>'+
-  '<select data-bind="fuelMonth">'+opts(months.map(function(m){return [m,parseISO(m+"-01").toLocaleDateString("en-GB",{month:"long",year:"numeric"})];}),state.fuelMonth,"All months")+'</select></div>';
-  h+='<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Date</th><th>Vehicle</th><th>Fuel</th><th class="n">Litres</th><th class="n">Rate</th><th class="n">Total</th><th class="n">Odometer</th><th>Station / Ref</th><th></th></tr></thead><tbody>'+
-    list.map(function(r){var v=vehicleById(r.vehicleId);return '<tr><td>'+fmtDate(r.date)+'</td><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(r.fuelType||"—")+'</td><td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+(r.rate?money(r.rate):"—")+'</td><td class="n"><b>'+money(r.total)+'</b></td><td class="n">'+(r.odometer?num(r.odometer).toLocaleString():"—")+'</td><td>'+esc(r.station||"—")+(r.ref?'<div class="sub">'+esc(r.ref)+'</div>':"")+'</td><td class="n"><button class="btn sm" data-act="editFuel" data-id="'+esc(r.id)+'">Edit</button></td></tr>';}).join("")+
-    '</tbody></table>':'<div class="empty">'+(all.length?"No entries match these filters.":"No fuel entries yet.")+'</div>')+'</div></div>';
+  var L=sum(thisM,"litres"),C=sum(thisM,"total");
+  function usable(r){var k=reqStatus(r).k;return k==="good"||k==="warn";}
+  function avail(kind){return reqs.filter(function(r){return r.kind===kind&&usable(r);}).reduce(function(s,r){return s+Math.max(0,reqBalance(r));},0);}
+  function availL(kind){return reqs.filter(function(r){return r.kind===kind&&usable(r)&&hasL(r);}).reduce(function(s,r){return s+Math.max(0,reqBalanceL(r));},0);}
+  function cnt(kind){return reqs.filter(function(r){return r.kind===kind&&usable(r);}).length;}
+  var h='<div class="top"><div><h1>Fueling</h1><p>Fuel requisitions (PR / Petty Cash) and the fuel log for every vehicle.</p></div>'+
+    '<div class="row"><button class="btn" data-act="addReq">+ Fuel Requisition</button><button class="btn primary" data-act="addFuel">+ Add Fuel Entry</button></div></div>'+
+  '<div class="kpis">'+
+    kpi("PR balance available",money0(avail("PR")),"",fmtL(availL("PR"))+" · "+cnt("PR")+" active PR"+(cnt("PR")===1?"":"s"))+
+    kpi("Petty cash balance",money0(avail("Petty Cash")),"",fmtL(availL("Petty Cash"))+" · "+cnt("Petty Cash")+" active")+
+    kpi("Fuel cost this month",money0(C),"",thisM.length+" entries · "+new Date().toLocaleDateString("en-GB",{month:"long"}))+
+    kpi("Litres this month",L.toLocaleString("en-US",{maximumFractionDigits:1}),"",L?"Avg "+money(C/L)+" / L":"—")+
+  '</div>'+
+  '<div class="toolbar"><div class="tabs"><button data-act="fuelTab" data-tab="log" class="'+(tab==="log"?"on":"")+'">Fuel log ('+all.length+')</button><button data-act="fuelTab" data-tab="req" class="'+(tab==="req"?"on":"")+'">Requisitions ('+reqs.length+')</button></div>'+
+  '<select data-bind="fuelVeh">'+vehicleOpts(state.fuelVeh).replace("Select vehicle…","All vehicles")+'</select>'+
+  '<select data-bind="fuelFund">'+opts(FUND_TYPES,state.fuelFund,"PR & Petty Cash")+'</select>';
+  if(tab==="log"){
+    var months=Array.from(new Set(all.map(function(r){return String(r.date||"").slice(0,7);}).filter(Boolean))).sort().reverse();
+    h+='<select data-bind="fuelMonth">'+opts(months.map(function(m){return [m,parseISO(m+"-01").toLocaleDateString("en-GB",{month:"long",year:"numeric"})];}),state.fuelMonth,"All months")+'</select></div>';
+    var list=all.filter(function(r){return (!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelMonth||String(r.date||"").slice(0,7)===state.fuelMonth)&&(!state.fuelFund||r.fundType===state.fuelFund)&&(!state.fuelReq||r.requisitionId===state.fuelReq);});
+    if(state.fuelReq){var fr=reqById(state.fuelReq);h+='<div class="row" style="margin:-4px 0 12px"><span class="pill acc">Showing entries for '+esc(fr?reqLabel(fr):"requisition")+'</span><button class="linkbtn" data-act="clearReqFilter">Show all</button></div>';}
+    h+='<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Date</th><th>Vehicle</th><th>Fuel</th><th>Funding</th><th class="n">Litres</th><th class="n">Rate</th><th class="n">Total</th><th class="n">Odometer</th><th>Station</th><th></th></tr></thead><tbody>'+
+      list.map(function(r){var v=vehicleById(r.vehicleId),rq=reqById(r.requisitionId);return '<tr><td>'+fmtDate(r.date)+'</td><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(r.fuelType||"—")+'</td>'+
+        '<td>'+(r.fundType?'<span class="pill '+(r.fundType==="PR"?"acc":"")+'">'+esc(fundShort(r.fundType))+'</span> <span class="mono" style="font-size:12.5px">'+esc(rq?rq.refNo:"")+'</span><div class="sub">'+(r.poNo?(r.fundType==="PR"?"PO ":"Voucher ")+esc(r.poNo):"")+'</div>':'<span class="hint">—</span>')+'</td>'+
+        '<td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+(r.rate?money(r.rate):"—")+'</td><td class="n"><b>'+money(r.total)+'</b></td><td class="n">'+(r.odometer?num(r.odometer).toLocaleString():"—")+'</td><td>'+esc(r.station||"—")+(r.ref?'<div class="sub">'+esc(r.ref)+'</div>':"")+'</td><td class="n"><button class="btn sm" data-act="editFuel" data-id="'+esc(r.id)+'">Edit</button></td></tr>';}).join("")+
+      '<tr class="tot"><td colspan="4"><b>Total</b> <span class="hint">('+list.length+' entries)</span></td><td class="n"><b>'+sum(list,"litres").toFixed(2)+'</b></td><td></td><td class="n"><b>'+money(sum(list,"total"))+'</b></td><td colspan="3"></td></tr>'+
+      '</tbody></table>':'<div class="empty">'+(all.length?"No entries match these filters.":"No fuel entries yet. Add a PR or Petty Cash requisition for a vehicle first, then log fuel against it.")+'</div>')+'</div></div>';
+  } else {
+    h+='</div>';
+    var rl=reqs.filter(function(r){return (!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelFund||r.kind===state.fuelFund);});
+    h+='<div class="panel"><div class="tablewrap">'+(rl.length?'<table><thead><tr><th>Type</th><th>Ref no.</th><th>Vehicle</th><th>Fuel</th><th>Date</th><th class="n">Value / Litres</th><th class="n">Used</th><th class="n">Balance</th><th>Status</th><th></th></tr></thead><tbody>'+
+      rl.map(function(rq){var v=vehicleById(rq.vehicleId),st=reqStatus(rq),n=Store.data.fuel_records.filter(function(f){return f.requisitionId===rq.id;}).length;
+        return '<tr><td><span class="pill '+(rq.kind==="PR"?"acc":"")+'">'+esc(fundShort(rq.kind))+'</span></td><td class="mono">'+esc(rq.refNo||"—")+(rq.docUrl?'<div class="sub">'+spLink(rq.docUrl,"Document")+'</div>':"")+'</td>'+
+        '<td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(rq.fuelType||"—")+'</td><td>'+fmtDate(rq.date)+'</td>'+
+        '<td class="n">'+money(rq.amount)+'<div class="sub">'+(hasL(rq)?fmtL(rq.litres):"—")+'</div></td>'+
+        '<td class="n">'+money(reqUsed(rq))+'<div class="sub">'+fmtL(reqUsedL(rq))+' · '+n+' fill'+(n===1?"":"s")+'</div></td>'+
+        '<td class="n"><b>'+money(Math.max(0,reqBalance(rq)))+'</b><div><b>'+(hasL(rq)?fmtL(Math.max(0,reqBalanceL(rq))):'<span class="hint">no litre limit</span>')+'</b></div>'+balBar(rq)+'</td>'+
+        '<td><span class="pill '+st.k+'">'+st.t+'</span>'+(st.t==="Limit reached"?'<div class="sub">Add a new '+(rq.kind==="PR"?"PR":"petty cash")+'</div>':"")+'</td>'+
+        '<td class="n"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">'+(n?'<button class="btn sm" data-act="viewReqEntries" data-id="'+esc(rq.id)+'">Entries</button>':"")+'<button class="btn sm" data-act="editReq" data-id="'+esc(rq.id)+'">Edit</button></div></td></tr>';}).join("")+
+      '</tbody></table>':'<div class="empty">No requisitions yet. Click <b>+ Fuel Requisition</b> to add a PR or Petty Cash amount for a vehicle.</div>')+'</div></div>';
+  }
   return h;
 }
 function sum(a,k){return a.reduce(function(s,r){return s+num(r[k]);},0);}
+
+/* ---------- Reports: fuel consumption & cost ---------- */
+var FUEL_SERIES=[{key:"Petrol",color:"var(--petrol)"},{key:"Diesel",color:"var(--diesel)"}];
+function isoOf(d){var x=new Date(d);x.setMinutes(x.getMinutes()-x.getTimezoneOffset());return x.toISOString().slice(0,10);}
+function repPresetRange(p){
+  var t=new Date();t.setHours(0,0,0,0);var to=isoOf(t),from;
+  if(p==="month") from=isoOf(new Date(t.getFullYear(),t.getMonth(),1));
+  else if(p==="3m") from=isoOf(new Date(t.getFullYear(),t.getMonth()-2,1));
+  else if(p==="6m") from=isoOf(new Date(t.getFullYear(),t.getMonth()-5,1));
+  else if(p==="year") from=isoOf(new Date(t.getFullYear(),0,1));
+  else { var ds=Store.data.fuel_records.map(function(r){return r.date;}).filter(Boolean).sort(); from=ds[0]||isoOf(new Date(t.getFullYear(),0,1)); if(ds.length&&ds[ds.length-1]>to) to=ds[ds.length-1]; }
+  return {from:from,to:to};
+}
+function repRange(){
+  if(!state.repFrom||!state.repTo){var r=repPresetRange(state.repPreset||"6m");state.repFrom=state.repFrom||r.from;state.repTo=state.repTo||r.to;}
+  var f=state.repFrom,t=state.repTo; if(f>t){var x=f;f=t;t=x;} return {from:f,to:t};
+}
+function repGran(from,to){
+  if(state.repGran) return state.repGran;
+  var days=(parseISO(to)-parseISO(from))/864e5;
+  return days<=45?"day":days<=120?"week":"month";
+}
+function bucketKey(iso,g){
+  if(g==="month") return iso.slice(0,7);
+  if(g==="week"){var d=parseISO(iso),w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return isoOf(d);}
+  return iso;
+}
+function bucketList(from,to,g){
+  var out=[],d=parseISO(g==="month"?from.slice(0,7)+"-01":bucketKey(from,g)),end=parseISO(to),guard=0;
+  while(d<=end&&guard++<2000){
+    out.push(g==="month"?isoOf(d).slice(0,7):isoOf(d));
+    if(g==="month") d=new Date(d.getFullYear(),d.getMonth()+1,1); else d.setDate(d.getDate()+(g==="week"?7:1));
+  }
+  return out;
+}
+function bucketLabel(k,g,long){
+  if(g==="month") return parseISO(k+"-01").toLocaleDateString("en-GB",{month:"short",year:long?"numeric":"2-digit"});
+  var s=parseISO(k).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  if(g==="week") return long?"Week of "+s+" "+k.slice(0,4):s;
+  return long?parseISO(k).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"}):s;
+}
+function repData(){
+  var rg=repRange(),g=repGran(rg.from,rg.to);
+  var recs=Store.data.fuel_records.filter(function(r){return r.date&&r.date>=rg.from&&r.date<=rg.to&&(!state.repVeh||r.vehicleId===state.repVeh)&&(r.fuelType==="Petrol"||r.fuelType==="Diesel");});
+  var keys=bucketList(rg.from,rg.to,g), idx={}; keys.forEach(function(k,i){idx[k]=i;});
+  var rows=keys.map(function(k){return {k:k,Petrol:{l:0,c:0},Diesel:{l:0,c:0}};});
+  var tot={Petrol:{l:0,c:0,n:0},Diesel:{l:0,c:0,n:0}}, byVeh={};
+  recs.forEach(function(r){
+    var i=idx[bucketKey(r.date,g)],ft=r.fuelType;
+    if(i!=null){rows[i][ft].l+=num(r.litres);rows[i][ft].c+=num(r.total);}
+    tot[ft].l+=num(r.litres);tot[ft].c+=num(r.total);tot[ft].n++;
+    var bv=byVeh[r.vehicleId]=byVeh[r.vehicleId]||{l:0,c:0,n:0,ft:ft};bv.l+=num(r.litres);bv.c+=num(r.total);bv.n++;
+  });
+  return {from:rg.from,to:rg.to,g:g,recs:recs,rows:rows,tot:tot,byVeh:byVeh};
+}
+function fmtNum(x,d){return num(x).toLocaleString("en-US",{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
+
+function viewReports(){
+  var D=repData(), T=D.tot, L=T.Petrol.l+T.Diesel.l, C=T.Petrol.c+T.Diesel.c;
+  var presets=[["month","This month"],["3m","3 months"],["6m","6 months"],["year","This year"],["all","All time"]];
+  var h='<div class="top"><div><h1>Reports</h1><p>Fuel consumption and cost — petrol vs diesel for the selected period.</p></div>'+
+    '<div class="row"><button class="btn" data-act="repCsv">Export CSV</button><button class="btn" data-act="repPrint">Print</button></div></div>'+
+  '<div class="toolbar rep-filters">'+
+    '<div class="tabs">'+presets.map(function(p){return '<button data-act="repPreset" data-p="'+p[0]+'" class="'+(state.repPreset===p[0]?"on":"")+'">'+p[1]+'</button>';}).join("")+'</div>'+
+    '<label class="inl">From<input type="date" data-bind="repFrom" value="'+esc(D.from)+'"></label>'+
+    '<label class="inl">To<input type="date" data-bind="repTo" value="'+esc(D.to)+'"></label>'+
+    '<select data-bind="repVeh">'+vehicleOpts(state.repVeh).replace("Select vehicle…","All vehicles")+'</select>'+
+    '<select data-bind="repGran">'+opts([["day","Daily"],["week","Weekly"],["month","Monthly"]],state.repGran,"Auto ("+({day:"daily",week:"weekly",month:"monthly"})[D.g]+")")+'</select>'+
+  '</div>'+
+  '<div class="kpis">'+
+    kpi("Total litres",fmtNum(L,1)+" L","",D.recs.length+" fuel entries")+
+    kpi("Petrol",fmtNum(T.Petrol.l,1)+" L","",money0(T.Petrol.c)+(T.Petrol.l?" · avg "+money(T.Petrol.c/T.Petrol.l)+"/L":""))+
+    kpi("Diesel",fmtNum(T.Diesel.l,1)+" L","",money0(T.Diesel.c)+(T.Diesel.l?" · avg "+money(T.Diesel.c/T.Diesel.l)+"/L":""))+
+    kpi("Total fuel cost",money0(C),"",fmtDate(D.from)+" – "+fmtDate(D.to))+
+  '</div>';
+  if(!D.recs.length){
+    return h+'<div class="panel"><div class="empty">No fuel entries between '+fmtDate(D.from)+' and '+fmtDate(D.to)+(state.repVeh?" for this vehicle":"")+'. Try a wider period.</div></div>';
+  }
+  h+='<div class="rep-grid">'+
+    '<section class="panel chart-card"><div class="panel-h"><h2>Litres by fuel type</h2><span class="hint">'+fmtDate(D.from)+' – '+fmtDate(D.to)+'</span></div><div class="pie-wrap" id="pieChart"></div></section>'+
+    '<section class="panel chart-card"><div class="panel-h"><h2>Fuel cost over time</h2>'+legendHtml()+'</div><div class="line-wrap" id="lineChart"></div></section>'+
+  '</div>';
+  // data table
+  h+='<section class="panel"><div class="panel-h"><h2>Breakdown by '+({day:"day",week:"week",month:"month"})[D.g]+'</h2></div><div class="tablewrap"><table><thead><tr><th>Period</th><th class="n">Petrol (L)</th><th class="n">Petrol cost</th><th class="n">Diesel (L)</th><th class="n">Diesel cost</th><th class="n">Total (L)</th><th class="n">Total cost</th></tr></thead><tbody>'+
+    D.rows.filter(function(r){return r.Petrol.l||r.Diesel.l||r.Petrol.c||r.Diesel.c;}).map(function(r){return '<tr><td>'+bucketLabel(r.k,D.g,true)+'</td><td class="n">'+fmtNum(r.Petrol.l,2)+'</td><td class="n">'+money(r.Petrol.c)+'</td><td class="n">'+fmtNum(r.Diesel.l,2)+'</td><td class="n">'+money(r.Diesel.c)+'</td><td class="n">'+fmtNum(r.Petrol.l+r.Diesel.l,2)+'</td><td class="n"><b>'+money(r.Petrol.c+r.Diesel.c)+'</b></td></tr>';}).join("")+
+    '<tr class="tot"><td><b>Total</b></td><td class="n"><b>'+fmtNum(T.Petrol.l,2)+'</b></td><td class="n"><b>'+money(T.Petrol.c)+'</b></td><td class="n"><b>'+fmtNum(T.Diesel.l,2)+'</b></td><td class="n"><b>'+money(T.Diesel.c)+'</b></td><td class="n"><b>'+fmtNum(L,2)+'</b></td><td class="n"><b>'+money(C)+'</b></td></tr>'+
+  '</tbody></table></div></section>';
+  var vr=Object.keys(D.byVeh).map(function(id){return Object.assign({id:id},D.byVeh[id]);}).sort(function(a,b){return b.c-a.c;});
+  h+='<section class="panel"><div class="panel-h"><h2>By vehicle</h2></div><div class="tablewrap"><table><thead><tr><th>Vehicle</th><th>Fuel</th><th class="n">Entries</th><th class="n">Litres</th><th class="n">Cost</th><th class="n">Avg / L</th><th class="n">Share of cost</th></tr></thead><tbody>'+
+    vr.map(function(r){var v=vehicleById(r.id);return '<tr><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td><span class="swatch" style="background:'+(r.ft==="Petrol"?"var(--petrol)":"var(--diesel)")+'"></span>'+esc(r.ft)+'</td><td class="n">'+r.n+'</td><td class="n">'+fmtNum(r.l,2)+'</td><td class="n">'+money(r.c)+'</td><td class="n">'+(r.l?money(r.c/r.l):"—")+'</td><td class="n">'+(C?(r.c/C*100).toFixed(1)+"%":"—")+'</td></tr>';}).join("")+
+  '</tbody></table></div></section>';
+  return h;
+}
+function legendHtml(){return '<div class="legend">'+FUEL_SERIES.map(function(s){return '<span><i class="swatch" style="background:'+s.color+'"></i>'+s.key+'</span>';}).join("")+'</div>';}
+
+/* Donut chart — litres Petrol vs Diesel */
+function drawPie(D){
+  var el=$("#pieChart"); if(!el) return;
+  var T=D.tot,total=T.Petrol.l+T.Diesel.l,S=220,R=100,r0=64,cx=S/2,cy=S/2,a=-Math.PI/2,paths="";
+  FUEL_SERIES.forEach(function(s){
+    var v=T[s.key].l; if(!v) return;
+    var frac=v/total;
+    if(frac>=0.9999){paths+='<circle class="slice" data-k="'+s.key+'" cx="'+cx+'" cy="'+cy+'" r="'+((R+r0)/2)+'" fill="none" stroke="'+s.color+'" stroke-width="'+(R-r0)+'"/>';return;}
+    var a2=a+frac*2*Math.PI,lg=frac>0.5?1:0;
+    function pt(rr,ang){return (cx+rr*Math.cos(ang)).toFixed(2)+" "+(cy+rr*Math.sin(ang)).toFixed(2);}
+    paths+='<path class="slice" data-k="'+s.key+'" d="M'+pt(R,a)+" A"+R+" "+R+" 0 "+lg+" 1 "+pt(R,a2)+" L"+pt(r0,a2)+" A"+r0+" "+r0+" 0 "+lg+" 0 "+pt(r0,a)+'Z" fill="'+s.color+'" stroke="var(--surface)" stroke-width="2" stroke-linejoin="round"/>';
+    a=a2;
+  });
+  var svg='<svg viewBox="0 0 '+S+' '+S+'" width="'+S+'" height="'+S+'" role="img" aria-label="Litres by fuel type: Petrol '+fmtNum(T.Petrol.l,1)+' L, Diesel '+fmtNum(T.Diesel.l,1)+' L">'+paths+
+    '<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" class="pie-total">'+fmtNum(total,0)+'</text><text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" class="pie-sub">litres total</text></svg>';
+  var leg='<div class="pie-legend">'+FUEL_SERIES.map(function(s){var v=T[s.key];return '<div class="pl-row"><i class="swatch lg" style="background:'+s.color+'"></i><div><div class="pl-name">'+s.key+' <span class="pl-pct">'+(total?(v.l/total*100).toFixed(1):"0.0")+'%</span></div><div class="pl-val">'+fmtNum(v.l,1)+' L</div><div class="sub">'+money(v.c)+' · '+v.n+' entries</div></div></div>';}).join("")+'</div>';
+  el.innerHTML='<div class="pie-svg">'+svg+'<div class="tip" hidden></div></div>'+leg;
+  var tip=el.querySelector(".tip"),box=el.querySelector(".pie-svg");
+  $$(".slice",el).forEach(function(p){
+    p.addEventListener("mousemove",function(ev){var k=p.dataset.k,v=T[k],bb=box.getBoundingClientRect();
+      tip.innerHTML='<b>'+k+'</b><div>'+fmtNum(v.l,2)+' L · '+(v.l/total*100).toFixed(1)+'%</div><div>'+money(v.c)+'</div>';
+      tip.hidden=false;tip.style.left=(ev.clientX-bb.left+12)+"px";tip.style.top=(ev.clientY-bb.top+12)+"px";
+      $$(".slice",el).forEach(function(o){o.style.opacity=o===p?1:.45;});});
+    p.addEventListener("mouseleave",function(){tip.hidden=true;$$(".slice",el).forEach(function(o){o.style.opacity=1;});});
+  });
+}
+
+/* Line chart — cost per period, Petrol vs Diesel (one y-axis, Rf) */
+function niceMax(v){if(v<=0)return 10;var p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p;}
+function drawLine(D){
+  var el=$("#lineChart"); if(!el) return;
+  var W=Math.max(300,el.clientWidth||600),H=310,pl=62,pr=64,pt=28,pb=34,iw=W-pl-pr,ih=H-pt-pb,rows=D.rows,n=rows.length;
+  var maxV=niceMax(Math.max.apply(null,rows.map(function(r){return Math.max(r.Petrol.c,r.Diesel.c);}))*1.05);
+  function X(i){return pl+(n<=1?iw/2:i*iw/(n-1));}
+  function Y(v){return pt+ih-(v/maxV)*ih;}
+  var g="",ticks=4;
+  for(var t=0;t<=ticks;t++){var v=maxV*t/ticks,y=Y(v);g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'" class="grid'+(t===0?" base":"")+'"/><text x="'+(pl-8)+'" y="'+(y+4)+'" text-anchor="end" class="ax">'+(v>=1000?fmtNum(v/1000,v%1000?1:0)+"k":fmtNum(v))+'</text>';}
+  g+='<text x="'+pl+'" y="12" text-anchor="start" class="ax">Cost ('+settings.currency+')</text>';
+  var maxLabels=Math.max(2,Math.floor(iw/70)),step=Math.ceil(n/maxLabels);
+  rows.forEach(function(r,i){if(i%step===0||i===n-1&&(n-1)%step>step/2)g+='<text x="'+X(i)+'" y="'+(H-10)+'" text-anchor="middle" class="ax">'+bucketLabel(r.k,D.g)+'</text>';});
+  var lines="",ends=[];
+  FUEL_SERIES.forEach(function(s){
+    var d=rows.map(function(r,i){return (i?"L":"M")+X(i).toFixed(1)+" "+Y(r[s.key].c).toFixed(1);}).join("");
+    lines+='<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    if(n===1) lines+='<circle cx="'+X(0)+'" cy="'+Y(rows[0][s.key].c)+'" r="4" fill="'+s.color+'"/>';
+    ends.push({k:s.key,y:Y(rows[n-1][s.key].c)});
+  });
+  ends.sort(function(a,b){return a.y-b.y;}); if(ends[1].y-ends[0].y<14){var mid=(ends[0].y+ends[1].y)/2;ends[0].y=mid-7;ends[1].y=mid+7;}
+  ends.forEach(function(e){lines+='<text x="'+(W-pr+8)+'" y="'+(e.y+4)+'" class="endlbl">'+e.k+'</text>';});
+  var svg='<svg width="'+W+'" height="'+H+'" role="img" aria-label="Fuel cost over time, petrol and diesel">'+g+lines+
+    '<line class="xhair" x1="0" x2="0" y1="'+pt+'" y2="'+(pt+ih)+'" visibility="hidden"/>'+
+    FUEL_SERIES.map(function(s){return '<circle class="hdot" data-k="'+s.key+'" r="5" fill="'+s.color+'" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>';}).join("")+
+    '<rect class="hit" x="'+pl+'" y="'+pt+'" width="'+iw+'" height="'+ih+'" fill="transparent"/></svg><div class="tip" hidden></div>';
+  el.innerHTML=svg;
+  var svgEl=el.querySelector("svg"),tip=el.querySelector(".tip"),xh=el.querySelector(".xhair");
+  el.querySelector(".hit").addEventListener("mousemove",function(ev){
+    var bb=svgEl.getBoundingClientRect(),x=ev.clientX-bb.left,i=n<=1?0:Math.round((x-pl)/(iw/(n-1)));i=Math.max(0,Math.min(n-1,i));
+    var r=rows[i],cx=X(i);xh.setAttribute("x1",cx);xh.setAttribute("x2",cx);xh.setAttribute("visibility","visible");
+    $$(".hdot",el).forEach(function(c){c.setAttribute("cx",cx);c.setAttribute("cy",Y(r[c.dataset.k].c));c.setAttribute("visibility","visible");});
+    tip.innerHTML='<b>'+bucketLabel(r.k,D.g,true)+'</b>'+FUEL_SERIES.map(function(s){return '<div class="trow"><i class="swatch" style="background:'+s.color+'"></i>'+s.key+'<span>'+money(r[s.key].c)+'</span></div><div class="sub" style="text-align:right">'+fmtNum(r[s.key].l,2)+' L</div>';}).join("")+'<div class="trow tt"><span>Total</span><span>'+money(r.Petrol.c+r.Diesel.c)+'</span></div>';
+    tip.hidden=false;var tw=tip.offsetWidth;tip.style.left=(cx+14+tw>W?cx-14-tw:cx+14)+"px";tip.style.top=(pt+6)+"px";
+  });
+  el.querySelector(".hit").addEventListener("mouseleave",function(){tip.hidden=true;xh.setAttribute("visibility","hidden");$$(".hdot",el).forEach(function(c){c.setAttribute("visibility","hidden");});});
+}
+var lastRepData=null;
+function wireReports(){ if(state.view!=="reports") return; lastRepData=repData(); if(!lastRepData.recs.length) return; drawPie(lastRepData); drawLine(lastRepData); }
+var _rsz; window.addEventListener("resize",function(){clearTimeout(_rsz);_rsz=setTimeout(function(){if(state.view==="reports"&&lastRepData&&lastRepData.recs.length)drawLine(lastRepData);},150);});
+function repCsv(){
+  var D=repData(),lines=[["Period","Petrol litres","Petrol cost","Diesel litres","Diesel cost","Total litres","Total cost"].join(",")];
+  D.rows.forEach(function(r){lines.push(['"'+bucketLabel(r.k,D.g,true)+'"',r.Petrol.l.toFixed(2),r.Petrol.c.toFixed(2),r.Diesel.l.toFixed(2),r.Diesel.c.toFixed(2),(r.Petrol.l+r.Diesel.l).toFixed(2),(r.Petrol.c+r.Diesel.c).toFixed(2)].join(","));});
+  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv"}));a.download="fdc-fuel-report_"+D.from+"_to_"+D.to+".csv";document.body.appendChild(a);a.click();a.remove();
+}
+
+/* ---------- User management (admins only) ---------- */
+function fmtStamp(t){if(!t)return "—";var d=new Date(t);return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})+" "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});}
+function viewUsers(){
+  var us=Store.data.users.slice().sort(function(a,b){return String(a.name||a.email||"").localeCompare(String(b.name||b.email||""));});
+  var q=(state.userQ||"").toLowerCase();
+  var list=us.filter(function(u){return !q||[u.name,u.email].join(" ").toLowerCase().indexOf(q)>=0;});
+  var admins=us.filter(function(u){return roleOf(u)!=="member";}).length;
+  var h='<div class="top"><div><h1>User Management</h1><p>Everyone who has registered. Admins can add and delete records and manage users; members can view and edit.</p></div></div>'+
+  '<div class="kpis">'+kpi("Registered users",us.length,"","")+kpi("Admins",admins,"","Including owner")+kpi("Members",us.length-admins,"","View & edit")+
+    kpi("Active last 7 days",us.filter(function(u){return u.lastLogin&&Date.now()-u.lastLogin<7*864e5;}).length,"","Signed in")+'</div>'+
+  '<div class="toolbar"><input class="grow" type="search" placeholder="Search name or email…" value="'+esc(state.userQ||"")+'" data-bind="userQ"></div>'+
+  '<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Name</th><th>Email</th><th>Access</th><th>Last sign-in</th><th>Registered</th></tr></thead><tbody>'+
+    list.map(function(u){var r=roleOf(u),me=currentUser&&u.id===currentUser.uid;
+      var ctl=r==="owner"?'<span class="pill acc">Owner (admin)</span>':
+        me?'<span class="pill acc">'+(r==="admin"?"Admin":"Member")+'</span> <span class="hint">(you)</span>':
+        '<select data-act-change="setRole" data-id="'+esc(u.id)+'" style="width:auto">'+opts([["member","Member"],["admin","Admin"]],r)+'</select>';
+      return '<tr><td><b>'+esc(u.name||"—")+'</b></td><td>'+esc(u.email||"—")+'</td><td>'+ctl+'</td><td>'+fmtStamp(u.lastLogin)+'</td><td>'+fmtStamp(u.createdAt)+'</td></tr>';}).join("")+
+    '</tbody></table>':'<div class="empty">No users found.</div>')+'</div></div>'+
+  '<p class="hint">New people register themselves from the sign-in page and start as <b>Member</b>. To remove someone completely, delete their account in Firebase Console → Authentication → Users.</p>';
+  return h;
+}
 
 /* ---------- Servicing view ---------- */
 function viewServicing(){
@@ -613,8 +927,8 @@ function vehicleForm(v){
     '<div><label>Vehicle image<input type="file" accept="image/*" id="imgFile"></label><div class="hint" style="margin-top:4px">Resized automatically before saving.</div>'+(pendingImage?'<button type="button" class="linkbtn" data-act="clearImg" style="margin-top:6px">Remove photo</button>':"")+'</div></div>'+
   '<div class="fsec">Basic details</div><div class="grid g3">'+
     fld('Registration / plate no. <span class="req">*</span>','plate',v.plate,"text","",' required')+
-    '<label>Vehicle type <span class="req">*</span><select name="type" required>'+opts(VEHICLE_TYPES,v.type,"Select…")+'</select></label>'+
-    '<label>Fuel type <span class="req">*</span><select name="fuelType" required>'+opts(FUEL_TYPES,v.fuelType,"Select…")+'</select></label>'+
+    '<label><span>Vehicle type <span class="req">*</span></span><select name="type" required>'+opts(VEHICLE_TYPES,v.type,"Select…")+'</select></label>'+
+    '<label><span>Fuel type <span class="req">*</span></span><select name="fuelType" required>'+opts(FUEL_TYPES,v.fuelType,"Select…")+'</select></label>'+
     fld("Make","make",v.make)+fld("Model","model",v.model)+fld("Year","year",v.year,"number")+
     fld("Colour","color",v.color)+fld("Chassis / hull no.","chassisNo",v.chassisNo)+fld("Engine no.","engineNo",v.engineNo)+
     fld("Assigned to (driver)","assignedTo",v.assignedTo)+fld("Department","department",v.department)+
@@ -695,30 +1009,112 @@ async function saveRenew(form){
   await Store.save("vehicles",Object.assign({},v,patch)); closeModal(); toast("Renewal saved");
 }
 
+/* ---------- Requisition form ---------- */
+function openReqForm(id,preset){
+  var r=id?reqById(id):Object.assign({date:todayISO(),kind:"PR"},preset||{});
+  if(!id&&r.vehicleId&&!r.fuelType){var pv=vehicleById(r.vehicleId);if(pv)r.fuelType=pv.fuelType;}
+  var used=id?reqUsed(r):0;
+  modalCtx={type:"req",id:id};
+  openModal(id?"Edit fuel requisition":"New fuel requisition",
+    '<div class="grid g2">'+
+    '<label class="span2"><span>Requisition type <span class="req">*</span></span><select name="kind" data-reqkind>'+opts(FUND_TYPES,r.kind)+'</select></label>'+
+    '<label class="span2"><span>Vehicle <span class="req">*</span></span><select name="vehicleId" data-reqveh>'+vehicleOpts(r.vehicleId)+'</select></label>'+
+    '<label><span>Fuel type <span class="req">*</span></span><select name="fuelType">'+opts(FUEL_TYPES,r.fuelType,"Select…")+'</select></label>'+
+    '<label><span><span id="reqRefLbl">'+(r.kind==="PR"?"PR no.":"Petty cash no.")+'</span> <span class="req">*</span></span><input name="refNo" value="'+esc(r.refNo||"")+'"></label>'+
+    fld('Date <span class="req">*</span>',"date",r.date,"date")+
+    fld('Total value ('+settings.currency+') <span class="req">*</span>',"amount",r.amount,"number")+
+    fld('Total litres <span class="req">*</span>',"litres",r.litres,"number")+
+    fld("Document (SharePoint link)","docUrl",r.docUrl,"url")+
+    '<label class="span2">Notes<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
+    (id?'<div class="span2 hint">Used so far: <b>'+money(used)+'</b> / <b>'+fmtL(reqUsedL(r))+'</b> · Balance: <b>'+money(reqBalance(r))+'</b>'+(hasL(r)?' / <b>'+fmtL(reqBalanceL(r))+'</b>':"")+'</div>'+
+      '<label class="span2" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="closed" style="width:auto"'+(r.closed?" checked":"")+'> Close this requisition (no more fuel can be charged to it)</label>':
+      '<div class="span2 hint">Each fuel entry charged to this requisition is deducted from the total value and the total litres. When either balance runs out, add a new requisition for the vehicle.</div>')+
+    '</div>',{del:id?"delReq":null,submit:id?"Save changes":"Add requisition"});
+}
+async function saveReq(form){
+  var o=formToObj(form), id=modalCtx.id;
+  o.closed=!!(form.closed&&form.closed.checked);
+  if(!o.vehicleId||!o.fuelType||!o.refNo||!o.date||!num(o.amount)||!num(o.litres)){toast("Type, vehicle, fuel type, ref no., date, value and litres are required");return;}
+  var dup=Store.data.fuel_requisitions.find(function(x){return x.id!==id&&x.kind===o.kind&&String(x.refNo).toLowerCase()===o.refNo.toLowerCase();});
+  if(dup){toast(fundShort(o.kind)+" "+o.refNo+" already exists");return;}
+  if(id){
+    var old=reqById(id), used=reqUsed(old);
+    if(num(o.amount)<used){toast("Value can't be less than the amount already used ("+money(used)+")");return;}
+    var usedL=reqUsedL(old); if(num(o.litres)<usedL){toast("Litres can't be less than already used ("+fmtL(usedL)+")");return;}
+    var linked=Store.data.fuel_records.some(function(f){return f.requisitionId===id;});
+    if(linked&&(o.vehicleId!==old.vehicleId||o.fuelType!==old.fuelType||o.kind!==old.kind)){toast("This requisition already has fuel entries — vehicle, fuel type and type can't change");return;}
+    o.id=id;
+  }
+  await Store.save("fuel_requisitions",o); closeModal(); state.view="fueling"; state.fuelTab="req"; render(); toast(id?"Requisition updated":"Requisition added");
+}
+
 /* ---------- Fuel form ---------- */
 function openFuelForm(id){
-  var r=id?Store.data.fuel_records.find(function(x){return x.id===id;}):{date:todayISO()};
-  modalCtx={type:"fuel",id:id};
+  var r=id?Store.data.fuel_records.find(function(x){return x.id===id;}):{date:todayISO(),fundType:"PR",vehicleId:state.fuelVeh||""};
+  if(!id&&r.vehicleId){var pv=vehicleById(r.vehicleId);if(pv)r.fuelType=pv.fuelType;}
+  modalCtx={type:"fuel",id:id,keepReq:r.requisitionId||""};
   openModal(id?"Edit fuel entry":"Add fuel entry",
     '<div class="grid g2">'+
-    '<label class="span2">Vehicle <span class="req">*</span><select name="vehicleId" required data-fuelveh>'+vehicleOpts(r.vehicleId)+'</select></label>'+
+    '<label class="span2"><span>Vehicle <span class="req">*</span></span><select name="vehicleId" required data-fuelveh>'+vehicleOpts(r.vehicleId)+'</select></label>'+
+    '<label><span>Fuel type <span class="req">*</span></span><select name="fuelType">'+opts(FUEL_TYPES,r.fuelType,"Select…")+'</select></label>'+
     fld('Date <span class="req">*</span>',"date",r.date,"date")+
-    '<label>Fuel type<select name="fuelType">'+opts(FUEL_TYPES,r.fuelType,"—")+'</select></label>'+
+    '<fieldset class="span2"><legend>Funding</legend><div class="grid g2">'+
+      '<label><span>Charge to <span class="req">*</span></span><select name="fundType">'+opts(FUND_TYPES,r.fundType||"PR")+'</select></label>'+
+      '<label><span>Requisition <span class="req">*</span></span><select name="requisitionId" id="reqSel"></select></label>'+
+      '<div class="span2" id="reqInfo"></div>'+
+      '<label class="span2"><span id="poLbl">PO no.</span><input name="poNo" value="'+esc(r.poNo||r.ref||"")+'"></label>'+
+    '</div></fieldset>'+
     fld('Litres <span class="req">*</span>',"litres",r.litres,"number","",' data-calc')+
     fld("Rate per litre ("+settings.currency+")","rate",r.rate,"number","",' data-calc')+
-    fld('Total cost ('+settings.currency+') <span class="req">*</span>',"total",r.total,"number")+
+    fld('Total cost ('+settings.currency+') <span class="req">*</span>',"total",r.total,"number","",' data-reqamt')+
     fld("Odometer (km / hrs)","odometer",r.odometer,"number")+
-    fld("Fuel station","station",r.station)+fld("Receipt / PO no.","ref",r.ref)+
+    fld("Fuel station","station",r.station)+fld("Receipt no.","ref",r.poNo?r.ref:"")+
     fld("Filled by","filledBy",r.filledBy||userName)+fld("Receipt (SharePoint link)","docUrl",r.docUrl,"url")+
     '<label class="span2">Notes<textarea name="notes">'+esc(r.notes||"")+'</textarea></label></div>',
     {del:id?"delFuel":null});
+  refreshReqSelect(r.requisitionId);
+}
+function refreshReqSelect(pick){
+  var f=$("#mform"); if(!f||!modalCtx||modalCtx.type!=="fuel") return;
+  var kind=f.fundType.value, sel=f.requisitionId, cur=pick!==undefined?pick:sel.value;
+  $("#poLbl").textContent=kind==="PR"?"PO no.":"Petty cash voucher no.";
+  var keep=(modalCtx.keepReq&&reqById(modalCtx.keepReq)&&reqById(modalCtx.keepReq).kind===kind&&reqById(modalCtx.keepReq).vehicleId===f.vehicleId.value)?modalCtx.keepReq:null;
+  var list=(f.vehicleId.value&&f.fuelType.value)?usableReqs(f.vehicleId.value,f.fuelType.value,kind,modalCtx.id,keep):[];
+  sel.innerHTML=list.length?list.map(function(rq){return '<option value="'+esc(rq.id)+'">'+esc(rq.refNo)+' — bal. '+esc(money(reqBalance(rq,modalCtx.id)))+(hasL(rq)?' · '+esc(fmtL(reqBalanceL(rq,modalCtx.id))):"")+'</option>';}).join(""):'<option value="">None available</option>';
+  if(cur&&list.some(function(x){return x.id===cur;})) sel.value=cur;
+  updateReqInfo();
+}
+function updateReqInfo(){
+  var f=$("#mform"), box=$("#reqInfo"); if(!f||!box) return;
+  var kind=f.fundType.value, word=kind==="PR"?"PR":"petty cash";
+  if(!f.vehicleId.value||!f.fuelType.value){box.innerHTML='<span class="hint">Select the vehicle and fuel type to see available '+word+' balance.</span>';return;}
+  var rq=reqById(f.requisitionId.value);
+  if(!rq){box.innerHTML='<div class="auth-msg">No '+word+' balance for this vehicle ('+esc(f.fuelType.value)+'). The limit has been reached or none exists — <button type="button" class="linkbtn" data-act="addReqFromFuel">add a new '+(kind==="PR"?"PR":"petty cash requisition")+'</button>.</div>';return;}
+  var bal=reqBalance(rq,modalCtx.id), t=num(f.total.value), after=bal-t;
+  var lim=hasL(rq), balL=lim?reqBalanceL(rq,modalCtx.id):0, tl=num(f.litres.value), afterL=balL-tl, overL=lim&&afterL<0;
+  box.innerHTML='<div class="reqbox'+(after<0||overL?" over":"")+'">'+
+      '<div><span>Value</span>'+money(rq.amount)+'</div><div><span>Available</span>'+money(bal)+'</div><div><span>This entry</span>'+money(t)+'</div><div><span>Balance after</span><b>'+money(after)+'</b></div>'+
+      '<div><span>Litres</span>'+(lim?fmtL(rq.litres):"—")+'</div><div><span>Available</span>'+(lim?fmtL(balL):"—")+'</div><div><span>This entry</span>'+fmtL(tl)+'</div><div><span>Litres after</span><b>'+(lim?fmtL(afterL):"—")+'</b></div>'+
+    '</div>'+
+    (after<0?'<div class="auth-msg" style="margin-top:6px">This entry exceeds the '+word+' value balance by '+money(-after)+'.</div>':"")+
+    (overL?'<div class="auth-msg" style="margin-top:6px">This entry exceeds the '+word+' litre balance by '+fmtL(-afterL)+'.</div>':"")+
+    (after<0||overL?'<div class="hint" style="margin-top:4px">Reduce the entry or add a new '+word+' requisition.</div>':"");
 }
 async function saveFuel(form){
-  var o=formToObj(form);
-  if(!o.vehicleId||!o.date||!num(o.litres)||!num(o.total)){toast("Vehicle, date, litres and total are required");return;}
-  if(modalCtx.id) o.id=modalCtx.id;
+  var o=formToObj(form), id=modalCtx.id;
+  if(!o.vehicleId||!o.fuelType||!o.date||!num(o.litres)||!num(o.total)){toast("Vehicle, fuel type, date, litres and total are required");return;}
+  var rq=reqById(o.requisitionId);
+  if(!rq){toast("Select a "+(o.fundType==="PR"?"PR":"petty cash")+" requisition with balance for this vehicle");return;}
+  if(rq.vehicleId!==o.vehicleId||rq.fuelType!==o.fuelType||rq.kind!==o.fundType){toast("Requisition does not match the vehicle / fuel type");return;}
+  var bal=reqBalance(rq,id);
+  if(num(o.total)>bal+0.001){toast("Exceeds available balance of "+money(bal)+" on "+reqLabel(rq));return;}
+  var balL=hasL(rq)?reqBalanceL(rq,id):null;
+  if(balL!==null&&num(o.litres)>balL+0.001){toast("Exceeds available litres ("+fmtL(balL)+") on "+reqLabel(rq));return;}
+  if(id) o.id=id;
   if(num(o.odometer)){var v=vehicleById(o.vehicleId); if(v&&num(o.odometer)>num(v.mileage)) Store.save("vehicles",{id:v.id,mileage:o.odometer});}
-  await Store.save("fuel_records",o); closeModal(); toast("Fuel entry saved");
+  await Store.save("fuel_records",o); closeModal(); state.fuelTab="log"; render();
+  var left=bal-num(o.total), leftL=balL===null?null:balL-num(o.litres);
+  toast("Fuel entry saved · "+reqLabel(rq)+" balance "+money(left)+(leftL!==null?" / "+fmtL(leftL):"")+(left<=0||(leftL!==null&&leftL<=0)?" — limit reached, add a new requisition":""));
 }
 
 /* ---------- Service forms ---------- */
@@ -728,7 +1124,7 @@ function openServiceForm(id,kind){
   modalCtx={type:"service",id:id,kind:kind};
   var body;
   if(kind==="periodic") body='<div class="grid g2">'+
-    '<label class="span2">Vehicle <span class="req">*</span><select name="vehicleId" required>'+vehicleOpts(r.vehicleId)+'</select></label>'+
+    '<label class="span2"><span>Vehicle <span class="req">*</span></span><select name="vehicleId" required>'+vehicleOpts(r.vehicleId)+'</select></label>'+
     fld('Service date <span class="req">*</span>',"date",r.date,"date")+
     '<label>Service type<select name="serviceType">'+opts(SERVICE_TYPES,r.serviceType||r.type)+'</select></label>'+
     fld("Odometer (km / hrs)","odometer",r.odometer,"number")+fld("Workshop / vendor","vendor",r.vendor)+
@@ -736,10 +1132,10 @@ function openServiceForm(id,kind){
     fld("Next service date","nextDate",r.nextDate,"date")+fld("Next service odometer","nextOdometer",r.nextOdometer,"number")+
     '<label class="span2">Work done / notes<textarea name="notes">'+esc(r.notes||"")+'</textarea></label></div>';
   else body='<div class="grid g2">'+
-    '<label class="span2">Vehicle <span class="req">*</span><select name="vehicleId" required>'+vehicleOpts(r.vehicleId)+'</select></label>'+
+    '<label class="span2"><span>Vehicle <span class="req">*</span></span><select name="vehicleId" required>'+vehicleOpts(r.vehicleId)+'</select></label>'+
     fld('Date of the issue <span class="req">*</span>',"date",r.date,"date")+
     '<label>Status<select name="status">'+opts(INCIDENT_STATUS,r.status||"Open")+'</select></label>'+
-    '<label class="span2">Issue <span class="req">*</span><textarea name="issue" placeholder="Describe what happened / what is wrong">'+esc(r.issue||"")+'</textarea></label>'+
+    '<label class="span2"><span>Issue <span class="req">*</span></span><textarea name="issue" placeholder="Describe what happened / what is wrong">'+esc(r.issue||"")+'</textarea></label>'+
     fld("Reported by","reportedBy",r.reportedBy||userName)+fld("Resolved date","resolvedDate",r.resolvedDate,"date")+
     fld("Workshop / vendor","vendor",r.vendor)+fld("Repair cost ("+settings.currency+")","cost",r.cost,"number")+
     fld("Report / invoice (SharePoint link)","docUrl",r.docUrl,"url","span2")+
@@ -821,7 +1217,11 @@ function showAuth(show){
 }
 function saveProfile(){
   if(!currentUser||!Store.db) return;
-  Store.db.collection("users").doc(currentUser.uid).set({name:userName,email:currentUser.email,lastLogin:Date.now()},{merge:true}).catch(function(e){console.warn("profile",e);});
+  var ref=Store.db.collection("users").doc(currentUser.uid), base={name:userName,email:currentUser.email,lastLogin:Date.now()};
+  ref.get().then(function(d){
+    if(!d.exists){base.role="member";base.createdAt=Date.now();}
+    return ref.set(base,{merge:true});
+  }).catch(function(e){console.warn("profile",e);});
 }
 var Auth={
   init:function(){
@@ -893,6 +1293,7 @@ document.addEventListener("click",function(e){
   if(e.target.id==="overlay"){closeModal();return;}
   var a=e.target.closest("[data-act]"); if(!a) return;
   var id=a.dataset.id, act=a.dataset.act;
+  if(ADMIN_ACTS.indexOf(act)>=0&&!isAdmin()){toast("Only admins can add or delete records");return;}
   switch(act){
     case "addVehicle": openVehicleForm(null); break;
     case "editVehicle": openVehicleForm(id); break;
@@ -909,6 +1310,17 @@ document.addEventListener("click",function(e){
       break;
     case "addFuel": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openFuelForm(null); break;
     case "editFuel": openFuelForm(id); break;
+    case "addReqForVeh": closeDrawer(); openReqForm(null,{vehicleId:id}); break;
+    case "addReq": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openReqForm(null,{vehicleId:state.fuelVeh||""}); break;
+    case "editReq": openReqForm(id); break;
+    case "addReqFromFuel": var ff=$("#mform"); var pre={vehicleId:ff.vehicleId.value,fuelType:ff.fuelType.value,kind:ff.fundType.value}; closeModal(); openReqForm(null,pre); break;
+    case "delReq": var rid=modalCtx.id; if(Store.data.fuel_records.some(function(f){return f.requisitionId===rid;})){toast("This requisition has fuel entries — close it instead of deleting");break;} confirmBox("Delete this requisition?",async function(){await Store.remove("fuel_requisitions",rid);toast("Deleted");}); break;
+    case "fuelTab": state.fuelTab=a.dataset.tab; if(a.dataset.tab==="req") state.fuelReq=""; render(); break;
+    case "viewReqEntries": state.fuelReq=id; state.fuelTab="log"; state.fuelMonth=""; render(); break;
+    case "repPreset": var pr=repPresetRange(a.dataset.p); state.repPreset=a.dataset.p; state.repFrom=pr.from; state.repTo=pr.to; render(); break;
+    case "repCsv": repCsv(); break;
+    case "repPrint": window.print(); break;
+    case "clearReqFilter": state.fuelReq=""; render(); break;
     case "delFuel": var fid=modalCtx.id; confirmBox("Delete this fuel entry?",async function(){await Store.remove("fuel_records",fid);toast("Deleted");}); break;
     case "addPeriodic": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openServiceForm(null,"periodic"); break;
     case "addIncident": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openServiceForm(null,"incident"); break;
@@ -923,10 +1335,18 @@ document.addEventListener("input",function(e){
   var b=e.target.dataset&&e.target.dataset.bind;
   if(b&&e.target.type==="search"){state[b]=e.target.value;var pos=e.target.selectionStart;render();var s=$('[data-bind="'+b+'"]');s.focus();s.setSelectionRange(pos,pos);}
   if(e.target.hasAttribute&&e.target.hasAttribute("data-calc")){var f=e.target.form,L=num(f.litres.value),R=num(f.rate.value);if(L&&R)f.total.value=(L*R).toFixed(2);}
+  if(modalCtx&&modalCtx.type==="fuel"&&e.target.form&&["litres","rate","total"].indexOf(e.target.name)>=0) updateReqInfo();
 });
 document.addEventListener("change",async function(e){
   var t=e.target, b=t.dataset&&t.dataset.bind;
-  if(b&&t.tagName==="SELECT"){state[b]=t.value;render();return;}
+  if(t.dataset&&t.dataset.actChange==="setRole"){
+    if(!isAdmin()){toast("Only admins can change access");render();return;}
+    var u=Store.data.users.find(function(x){return x.id===t.dataset.id;}), nr=t.value;
+    try{await Store.db.collection("users").doc(u.id).set({role:nr,roleUpdatedBy:currentUser.email,roleUpdatedAt:Date.now()},{merge:true});toast((u.name||u.email)+" is now "+(nr==="admin"?"an Admin":"a Member"));}
+    catch(err){toast("Could not change access: "+(err.code||err.message));render();}
+    return;
+  }
+  if(b&&(t.tagName==="SELECT"||t.type==="date")){state[b]=t.value;if(b==="repFrom"||b==="repTo")state.repPreset="";render();return;}
   if(t.id==="imgFile"&&t.files[0]){
     try{pendingImage=await compressImage(t.files[0]);$("#imgPrev").innerHTML='<img src="'+pendingImage+'" alt="">';}catch(err){toast("Could not read that image");}
   }
@@ -935,7 +1355,10 @@ document.addEventListener("change",async function(e){
     if(st.value&&du.value) en.value=addMonths(st.value,+du.value);
   }
   if(t.hasAttribute("data-dur-end")){var fs2=t.closest("fieldset");fs2.querySelector("[data-dur]").value="";}
-  if(t.hasAttribute("data-fuelveh")){var v=vehicleById(t.value);if(v&&v.fuelType)t.form.fuelType.value=v.fuelType;}
+  if(t.hasAttribute("data-fuelveh")||t.hasAttribute("data-reqveh")){var v=vehicleById(t.value);if(v&&v.fuelType)t.form.fuelType.value=v.fuelType;}
+  if(t.hasAttribute("data-reqkind")) $("#reqRefLbl").textContent=t.value==="PR"?"PR no.":"Petty cash no.";
+  if(modalCtx&&modalCtx.type==="fuel"&&["vehicleId","fuelType","fundType"].indexOf(t.name)>=0) refreshReqSelect();
+  if(modalCtx&&modalCtx.type==="fuel"&&t.name==="requisitionId") updateReqInfo();
 });
 document.addEventListener("submit",async function(e){
   if(e.target.id!=="mform") return; e.preventDefault();
@@ -945,6 +1368,7 @@ document.addEventListener("submit",async function(e){
       case "vehicle": await saveVehicle(f); break;
       case "renew": await saveRenew(f); break;
       case "fuel": await saveFuel(f); break;
+      case "req": await saveReq(f); break;
       case "service": await saveService(f); break;
       case "confirm": var fn=modalCtx.fn; closeModal(); await fn(); break;
       case "settings":
