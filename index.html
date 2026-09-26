@@ -10,6 +10,10 @@
 <meta name="apple-mobile-web-app-title" content="FDC Vehicles">
 <meta name="application-name" content="FDC Vehicle Management">
 <meta name="theme-color" content="#131a1b">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Portal to manage all FDC corporate vehicles">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -217,6 +221,7 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 .mini h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--steel);padding:10px 14px;border-bottom:1px solid var(--line)}
 .scrim{position:fixed;inset:0;background:rgba(10,14,20,.3);z-index:39}
 .scrim[hidden]{display:none}
+.steps{margin:0 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:8px}
 .lightbox{position:fixed;inset:0;z-index:95;background:rgba(5,8,12,.92);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
 .lightbox[hidden]{display:none}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
@@ -234,6 +239,9 @@ body:not(.is-admin) [data-act="delReq"],body:not(.is-admin) [data-act="delServic
 .member-note{display:none}body:not(.is-admin) .member-note{display:inline}
 .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mobile-tools{display:none}
+.install-btn{align-self:flex-start}.install-btn[hidden]{display:none!important}
+.auth-install{justify-self:center;margin-top:4px}
+@media (display-mode:standalone){.install-btn{display:none!important}}
 .theme-toggle{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);border-radius:99px;padding:5px 12px 5px 8px;font-size:12.5px;align-self:flex-start}
 .theme-toggle:hover{border-color:var(--steel-soft)}
 .theme-toggle .ti-sun,.theme-toggle .ti-moon{font-size:14px;line-height:1;width:16px;text-align:center}
@@ -290,10 +298,11 @@ body.locked .shell{visibility:hidden}
       <div class="sync"><span class="dot" id="syncDot"></span><span id="syncText">Connecting…</span></div>
       <div class="who"><b id="whoName">—</b><span id="whoEmail" class="hint"></span><span id="whoRole" class="pill role-badge"></span></div>
       <button type="button" class="theme-toggle" data-act="toggleTheme" aria-label="Switch light / dark mode" title="Switch light / dark mode"><span class="ti-sun">☀</span><span class="ti-moon">☾</span><span class="tl"></span></button>
+      <button type="button" class="btn sm install-btn" data-act="installApp" hidden>&#8681; Install app</button>
       <button class="linkbtn" data-act="settings">Settings &amp; notifications</button>
       <button class="linkbtn" data-act="signOut">Sign out</button>
     </div>
-    <span class="mobile-tools"><button type="button" class="theme-toggle icon-only" data-act="toggleTheme" aria-label="Switch light / dark mode" title="Switch light / dark mode"><span class="ti-sun">☀</span><span class="ti-moon">☾</span><span class="tl"></span></button><button class="btn sm" data-act="signOut">Sign out</button></span>
+    <span class="mobile-tools"><button type="button" class="btn sm install-btn" data-act="installApp" hidden>Install</button><button type="button" class="theme-toggle icon-only" data-act="toggleTheme" aria-label="Switch light / dark mode" title="Switch light / dark mode"><span class="ti-sun">☀</span><span class="ti-moon">☾</span><span class="tl"></span></button><button class="btn sm" data-act="signOut">Sign out</button></span>
   </aside>
   <main id="main"></main>
 </div>
@@ -320,6 +329,7 @@ body.locked .shell{visibility:hidden}
         <div class="auth-msg" id="authMsg" role="alert" hidden></div>
         <button type="submit" class="btn primary auth-submit" id="authSubmit">Sign in</button>
         <button type="button" class="linkbtn" data-only="login" data-act="forgotPw" style="justify-self:center">Forgot password?</button>
+        <button type="button" class="btn install-btn auth-install" data-act="installApp" hidden>&#8681; Install app</button>
       </div>
     </form>
   </div>
@@ -1288,6 +1298,7 @@ document.addEventListener("click",function(e){
   var a=e.target.closest("[data-act]"); if(!a) return;
   if(a.dataset.act==="togglePw"){e.preventDefault();var i=a.previousElementSibling;i.type=i.type==="password"?"text":"password";a.textContent=i.type==="password"?"Show":"Hide";}
   if(a.dataset.act==="toggleTheme") toggleTheme();
+  if(a.dataset.act==="installApp") installApp();
   if(a.dataset.act==="forgotPw") Auth.forgot();
   if(a.dataset.act==="signOut") firebase.auth().signOut().then(function(){toast("Signed out");});
   if(a.dataset.act==="changePw" && currentUser) firebase.auth().sendPasswordResetEmail(currentUser.email).then(function(){toast("Reset link sent to "+currentUser.email);}).catch(function(err){toast(authErr(err));});
@@ -1375,6 +1386,7 @@ document.addEventListener("submit",async function(e){
       case "renew": await saveRenew(f); break;
       case "fuel": await saveFuel(f); break;
       case "req": await saveReq(f); break;
+      case "info": closeModal(); break;
       case "service": await saveService(f); break;
       case "confirm": var fn=modalCtx.fn; closeModal(); await fn(); break;
       case "settings":
@@ -1387,6 +1399,27 @@ document.addEventListener("submit",async function(e){
   finally{ if(btn.isConnected) btn.disabled=false; }
 });
 document.addEventListener("keydown",function(e){if(e.key==="Escape"){if(!$("#lightbox").hidden)$("#lightbox").hidden=true;else if(!$("#overlay").hidden)closeModal();else if(state.drawerId)closeDrawer();}});
+
+/* ================= INSTALLABLE APP (PWA) ================= */
+var deferredInstall=null;
+function isStandalone(){return (window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;}
+function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}
+function showInstall(on){$$(".install-btn").forEach(function(b){b.hidden=!on;});}
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredInstall=e;if(!isStandalone())showInstall(true);});
+window.addEventListener("appinstalled",function(){deferredInstall=null;showInstall(false);toast("FDC Vehicle Management installed");});
+if(isIOS()&&!isStandalone()) showInstall(true);
+async function installApp(){
+  if(deferredInstall){deferredInstall.prompt();var r=await deferredInstall.userChoice;deferredInstall=null;if(r.outcome==="accepted")showInstall(false);return;}
+  modalCtx={type:"info"};
+  var ios=isIOS();
+  openModal("Install FDC Vehicle Management",
+    ios?'<ol class="steps"><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button <span class="hint">(square with an arrow)</span>.</li><li>Choose <b>Add to Home Screen</b>, then tap <b>Add</b>.</li></ol><p class="hint">The app opens full-screen from your home screen, like any other app.</p>'
+       :'<ol class="steps"><li>In <b>Chrome</b> or <b>Edge</b>, click the <b>install icon</b> at the right end of the address bar <span class="hint">(a monitor with a down arrow)</span>.</li><li>Or open the browser menu <b>⋮</b> → <b>Cast, save and share</b> / <b>Apps</b> → <b>Install FDC Vehicle Management</b>.</li><li>On Android: menu <b>⋮</b> → <b>Install app</b> / <b>Add to Home screen</b>.</li></ol><p class="hint">Installing needs the app to be opened from its web address (https), not from a file on your computer.</p>',
+    {submit:"Got it",noFocus:true});
+}
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){
+  window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(e){console.warn("SW",e);});});
+}
 
 /* ================= BOOT ================= */
 applyTheme();
