@@ -63,6 +63,7 @@ a{color:var(--accent)}
 .nav button.on{background:var(--accent-soft);color:var(--accent-strong)}
 
 .nav .badge{margin-left:auto}
+.badge.warn{background:var(--warn)}
 .side-foot{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:12px;color:var(--steel);display:flex;flex-direction:column;gap:8px}
 .sync{display:flex;align-items:center;gap:7px}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--steel-soft);display:inline-block;flex:none}
@@ -230,6 +231,19 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 .scrim{position:fixed;inset:0;background:rgba(10,14,20,.3);z-index:39}
 .scrim[hidden]{display:none}
 .steps{margin:0 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px;font-size:14px}
+.dgrid span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--steel-soft);margin-bottom:2px}
+.balcard{border:1px solid var(--line);border-left:4px solid var(--good);border-radius:10px;padding:12px 14px;background:var(--surface-2)}
+.balcard.warn{border-left-color:var(--warn)}.balcard.crit{border-left-color:var(--critical);background:var(--critical-soft)}
+.bc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.bc-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--steel)}
+.bc-big{font-size:28px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.bc-sub{color:var(--steel);font-size:13px}
+.balcard .bar{height:8px;margin:10px 0}
+.bc-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;font-size:13px;font-variant-numeric:tabular-nums}
+.bc-row span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--steel-soft)}
+tr.hl td{background:var(--accent-soft)}
+@media (max-width:560px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bc-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .lightbox{position:fixed;inset:0;z-index:95;background:rgba(5,8,12,.92);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
 .lightbox[hidden]{display:none}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
@@ -297,7 +311,7 @@ body.locked .shell{visibility:hidden}
     <div class="brand"><div class="mark">FDC Vehicle<br>Management</div></div>
     <nav class="nav" id="nav">
       <button data-view="vehicles" class="on">Vehicle Details<span class="badge" id="alertBadge" hidden></span></button>
-      <button data-view="fueling">Fueling</button>
+      <button data-view="fueling">Fueling<span class="badge" id="fuelBadge" hidden></span></button>
       <button data-view="servicing">Servicing</button>
       <button data-view="reports">Reports</button>
       <button data-view="users" class="admin-only">User Management</button>
@@ -390,7 +404,7 @@ function isOwnerEmail(e){return OWNER_EMAILS.indexOf(String(e||"").toLowerCase()
 function myProfile(){return currentUser?Store.data.users.find(function(u){return u.id===currentUser.uid;}):null;}
 function isAdmin(){if(!currentUser)return false;if(isOwnerEmail(currentUser.email))return true;var p=myProfile();return !!p&&p.role==="admin";}
 function roleOf(u){return isOwnerEmail(u.email)?"owner":(u.role==="admin"?"admin":"member");}
-var ADMIN_ACTS=["addVehicle","addFuel","addReq","addReqForVeh","addReqFromFuel","addPeriodic","addIncident","delVehicle","delFuel","delReq","delService","setRole"];
+var ADMIN_ACTS=["newReqLike","addVehicle","addFuel","addReq","addReqForVeh","addReqFromFuel","addPeriodic","addIncident","delVehicle","delFuel","delReq","delService","setRole"];
 var currentUser = null;
 var userName = "";
 
@@ -534,13 +548,30 @@ function collectAlerts(){
       out.push({v:vehicleById(r.vehicleId),s:{label:"Periodic service"},st:st,exp:r.nextDate});
     }
   });
+  out=out.concat(reqAlerts());
   return out.sort(function(a,b){return a.st.d-b.st.d;});
+}
+/* Requisitions that are used up (and no replacement added yet) or running low */
+function reqAlerts(){
+  var out=[];
+  Store.data.fuel_requisitions.forEach(function(rq){
+    if(rq.closed) return;
+    var st=reqStatus(rq), word=rq.kind==="PR"?"PR":"Petty cash";
+    if(st.k==="crit"){
+      if(usableReqs(rq.vehicleId,rq.fuelType,rq.kind).length) return; // a new requisition already covers this vehicle
+      out.push({v:vehicleById(rq.vehicleId),reqId:rq.id,s:{label:word+" "+rq.refNo+" balance depleted"},note:"add a new "+(rq.kind==="PR"?"PR":"petty cash requisition"),st:{k:"crit",t:"Balance depleted",d:-1}});
+    } else if(st.k==="warn"){
+      out.push({v:vehicleById(rq.vehicleId),reqId:rq.id,s:{label:word+" "+rq.refNo+" low balance"},note:money(Math.max(0,reqBalance(rq)))+(hasL(rq)?" · "+fmtL(Math.max(0,reqBalanceL(rq))):"")+" left",st:{k:"warn",t:"Low balance",d:1}});
+    }
+  });
+  return out;
 }
 function maybeNotify(alerts){
   if(!("Notification" in window)||Notification.permission!=="granted"||!alerts.length) return;
   var key="fdc_notified_"+todayISO(); if(lsGet(key,false)) return;
   var exp=alerts.filter(function(a){return a.st.k==="crit";}).length;
-  new Notification("FDC Vehicle Management",{body:(exp?exp+" expired / overdue, ":"")+(alerts.length-exp)+" expiring within "+settings.remindDays+" days. Open the portal to review."});
+  var dep=alerts.filter(function(a){return a.reqId&&a.st.k==="crit";}).length;
+  new Notification("FDC Vehicle Management",{body:(dep?dep+" PR / petty cash balance"+(dep>1?"s":"")+" depleted. ":"")+(exp?exp+" expired / overdue, ":"")+(alerts.length-exp)+" expiring within "+settings.remindDays+" days. Open the portal to review."});
   lsSet(key,true);
 }
 
@@ -551,6 +582,8 @@ function render(){
   $$("#nav button").forEach(function(b){b.classList.toggle("on",b.dataset.view===state.view);});
   var alerts=collectAlerts(), b=$("#alertBadge");
   b.hidden=!alerts.length; b.textContent=alerts.length;
+  var ra=alerts.filter(function(a){return a.reqId;}), fb=$("#fuelBadge"); fb.hidden=!ra.length; fb.textContent=ra.length;
+  fb.classList.toggle("warn",!!ra.length&&!ra.some(function(a){return a.st.k==="crit";}));
   $("#whoName").textContent=userName||"—";$("#whoEmail").textContent=currentUser?currentUser.email:"";
   var admin=isAdmin(); document.body.classList.toggle("is-admin",admin);
   var rb=$("#whoRole"); rb.hidden=!currentUser; rb.textContent=admin?"Admin":"Member"; rb.className="pill role-badge "+(admin?"acc":"");
@@ -590,7 +623,7 @@ function viewVehicles(alerts){
   h+='<section class="panel"><div class="panel-h"><h2>Needs attention</h2><span class="hint">Items expiring within '+settings.remindDays+' days or already expired</span></div>';
   if(!alerts.length) h+='<div class="empty">Nothing due. All statutory documents are valid.</div>';
   else h+='<ul class="alerts">'+alerts.map(function(a){
-    return '<li data-act="openVehicle" data-id="'+esc(a.v&&a.v.id)+'"><span class="dot '+a.st.k+'"></span><div class="what"><b class="mono">'+esc(vLabel(a.v))+'</b> · '+esc(a.s.label)+' <span class="hint">('+fmtDate(a.exp)+')</span></div><span class="pill '+a.st.k+'">'+esc(a.st.t)+'</span></li>';
+    return '<li data-act="'+(a.reqId?"viewReq":"openVehicle")+'" data-id="'+esc(a.reqId||(a.v&&a.v.id))+'"><span class="dot '+a.st.k+'"></span><div class="what"><b class="mono">'+esc(vLabel(a.v))+'</b> · '+esc(a.s.label)+' <span class="hint">('+esc(a.note||fmtDate(a.exp))+')</span></div><span class="pill '+a.st.k+'">'+esc(a.st.t)+'</span></li>';
   }).join("")+'</ul>';
   h+='</section>';
   h+='<div class="toolbar"><input class="grow" type="search" placeholder="Search plate, make, model, driver…" value="'+esc(state.q)+'" data-bind="q">'+
@@ -721,8 +754,11 @@ function viewFueling(){
     kpi("Fuel cost this month",money0(C),"",thisM.length+" entries · "+new Date().toLocaleDateString("en-GB",{month:"long"}))+
     kpi("Litres this month",L.toLocaleString("en-US",{maximumFractionDigits:1}),"",L?"Avg "+money(C/L)+" / L":"—")+
   '</div>'+
+  (function(){var ra=reqAlerts(); if(!ra.length) return "";
+    return '<section class="panel"><div class="panel-h"><h2>Requisitions needing attention</h2><span class="hint">Depleted balances and balances under 20%</span></div><ul class="alerts">'+ra.map(function(a){
+      return '<li data-act="viewReq" data-id="'+esc(a.reqId)+'"><span class="dot '+a.st.k+'"></span><div class="what"><b class="mono">'+esc(vLabel(a.v))+'</b> · '+esc(a.s.label)+' <span class="hint">('+esc(a.note)+')</span></div><span class="pill '+a.st.k+'">'+esc(a.st.t)+'</span></li>';}).join("")+'</ul></section>';})()+
   '<div class="toolbar"><div class="tabs"><button data-act="fuelTab" data-tab="log" class="'+(tab==="log"?"on":"")+'">Fuel log ('+all.length+')</button><button data-act="fuelTab" data-tab="req" class="'+(tab==="req"?"on":"")+'">Requisitions ('+reqs.length+')</button></div>'+
-  '<input class="grow" type="search" data-bind="fuelQ" value="'+esc(state.fuelQ)+'" placeholder="'+(tab==="log"?"Search plate, PR / PO no., station, receipt…":"Search PR / petty cash no., plate, notes…")+'" aria-label="Search fueling">'+
+  '<input class="grow" type="search" data-bind="fuelQ" value="'+esc(state.fuelQ)+'" placeholder="'+(tab==="log"?"Search plate, PR / PO no., station, delivery note…":"Search PR / petty cash no., plate, notes…")+'" aria-label="Search fueling">'+
   '<select data-bind="fuelVeh">'+vehicleOpts(state.fuelVeh).replace("Select vehicle…","All vehicles")+'</select>'+
   '<select data-bind="fuelFund">'+opts(FUND_TYPES,state.fuelFund,"PR & Petty Cash")+'</select>';
   if(tab==="log"){
@@ -733,7 +769,7 @@ function viewFueling(){
     h+='<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Date</th><th>Vehicle</th><th>Fuel</th><th>Funding</th><th class="n">Litres</th><th class="n">Rate</th><th class="n">Total</th><th class="n">Odometer</th><th>Station</th><th></th></tr></thead><tbody>'+
       list.map(function(r){var v=vehicleById(r.vehicleId),rq=reqById(r.requisitionId);return '<tr><td>'+fmtDate(r.date)+'</td><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(r.fuelType||"—")+'</td>'+
         '<td>'+(r.fundType?'<span class="pill '+(r.fundType==="PR"?"acc":"")+'">'+esc(fundShort(r.fundType))+'</span> <span class="mono" style="font-size:12.5px">'+esc(rq?rq.refNo:"")+'</span><div class="sub">'+(r.poNo?(r.fundType==="PR"?"PO ":"Voucher ")+esc(r.poNo):"")+'</div>':'<span class="hint">—</span>')+'</td>'+
-        '<td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+(r.rate?money(r.rate):"—")+'</td><td class="n"><b>'+money(r.total)+'</b></td><td class="n">'+(r.odometer?num(r.odometer).toLocaleString():"—")+'</td><td>'+esc(r.station||"—")+(r.ref?'<div class="sub">'+esc(r.ref)+'</div>':"")+'</td><td class="n"><button class="btn sm" data-act="editFuel" data-id="'+esc(r.id)+'">Edit</button></td></tr>';}).join("")+
+        '<td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+(r.rate?money(r.rate):"—")+'</td><td class="n"><b>'+money(r.total)+'</b></td><td class="n">'+(r.odometer?num(r.odometer).toLocaleString():"—")+'</td><td>'+esc(r.station||"—")+(r.ref?'<div class="sub">DN '+esc(r.ref)+'</div>':"")+'</td><td class="n"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="viewFuel" data-id="'+esc(r.id)+'">View</button><button class="btn sm" data-act="editFuel" data-id="'+esc(r.id)+'">Edit</button></div></td></tr>';}).join("")+
       '<tr class="tot"><td colspan="4"><b>Total</b> <span class="hint">('+list.length+' entries)</span></td><td class="n"><b>'+sum(list,"litres").toFixed(2)+'</b></td><td></td><td class="n"><b>'+money(sum(list,"total"))+'</b></td><td colspan="3"></td></tr>'+
       '</tbody></table>':'<div class="empty">'+(all.length?"No entries match these filters.":"No fuel entries yet. Add a PR or Petty Cash requisition for a vehicle first, then log fuel against it.")+'</div>')+'</div></div>';
   } else {
@@ -747,7 +783,7 @@ function viewFueling(){
         '<td class="n">'+money(reqUsed(rq))+'<div class="sub">'+fmtL(reqUsedL(rq))+' · '+n+' fill'+(n===1?"":"s")+'</div></td>'+
         '<td class="n"><b>'+money(Math.max(0,reqBalance(rq)))+'</b><div><b>'+(hasL(rq)?fmtL(Math.max(0,reqBalanceL(rq))):'<span class="hint">no litre limit</span>')+'</b></div>'+balBar(rq)+'</td>'+
         '<td><span class="pill '+st.k+'">'+st.t+'</span>'+(st.t==="Limit reached"?'<div class="sub">Add a new '+(rq.kind==="PR"?"PR":"petty cash")+'</div>':"")+'</td>'+
-        '<td class="n"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">'+(n?'<button class="btn sm" data-act="viewReqEntries" data-id="'+esc(rq.id)+'">Entries</button>':"")+'<button class="btn sm" data-act="editReq" data-id="'+esc(rq.id)+'">Edit</button></div></td></tr>';}).join("")+
+        '<td class="n"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">'+'<button class="btn sm" data-act="viewReq" data-id="'+esc(rq.id)+'">View</button><button class="btn sm" data-act="editReq" data-id="'+esc(rq.id)+'">Edit</button></div></td></tr>';}).join("")+
       '</tbody></table>':'<div class="empty">'+(reqs.length?'No requisitions match your search or filters.':'No requisitions yet. Click <b>+ Fuel Requisition</b> to add a PR or Petty Cash amount for a vehicle.')+'</div>')+'</div></div>';
   }
   return h;
@@ -972,7 +1008,7 @@ function viewServicing(){
 var modalCtx=null;
 function openModal(title,body,opts2){
   opts2=opts2||{};
-  $("#overlay").innerHTML='<form class="modal '+(opts2.wide?"wide":"")+'" id="mform" novalidate><div class="modal-h"><h2>'+title+'</h2><button type="button" class="x" data-act="closeModal" aria-label="Close">×</button></div><div class="modal-b">'+body+'</div><div class="modal-f">'+(opts2.del?'<button type="button" class="btn danger" data-act="'+opts2.del+'" style="margin-right:auto">Delete</button>':"")+'<button type="button" class="btn" data-act="closeModal">Cancel</button><button type="submit" class="btn primary">'+(opts2.submit||"Save")+'</button></div></form>';
+  $("#overlay").innerHTML='<form class="modal '+(opts2.wide?"wide":"")+'" id="mform" novalidate><div class="modal-h"><h2>'+title+'</h2><button type="button" class="x" data-act="closeModal" aria-label="Close">×</button></div><div class="modal-b">'+body+'</div><div class="modal-f">'+(opts2.del?'<button type="button" class="btn danger" data-act="'+opts2.del+'" style="margin-right:auto">Delete</button>':"")+'<button type="button" class="btn" data-act="closeModal">'+(opts2.cancel||"Cancel")+'</button><button type="submit" class="btn primary">'+(opts2.submit||"Save")+'</button></div></form>';
   Nav.openLayer();
   $("#overlay").hidden=false;
   var f=$("#mform input:not([type=file]),#mform select,#mform textarea"); if(f&&!opts2.noFocus) f.focus();
@@ -1123,6 +1159,55 @@ async function saveRenew(form){
   await Store.save("vehicles",Object.assign({},v,patch)); closeModal(); toast("Renewal saved");
 }
 
+/* ---------- Detail views (read-only) ---------- */
+function dl(pairs){return '<div class="dgrid">'+pairs.map(function(p){return '<div><span>'+p[0]+'</span>'+(p[2]?p[1]:esc(p[1]==null||p[1]===""?"—":p[1]))+'</div>';}).join("")+'</div>';}
+/* Balance card + every fill on the requisition with a running balance */
+function reqBalanceHtml(rq,highlightId){
+  var st=reqStatus(rq), lim=hasL(rq), bal=reqBalance(rq), balL=lim?reqBalanceL(rq):0;
+  var fills=Store.data.fuel_records.filter(function(f){return f.requisitionId===rq.id;}).sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))||(a.createdAt||0)-(b.createdAt||0);});
+  var runC=num(rq.amount), runL=num(rq.litres);
+  var rows=fills.map(function(f){runC-=num(f.total);runL-=num(f.litres);
+    return '<tr'+(f.id===highlightId?' class="hl"':'')+'><td>'+fmtDate(f.date)+'</td><td>'+esc(f.poNo||"—")+'</td><td class="n">'+fmtL(f.litres)+'</td><td class="n">'+money(f.total)+'</td><td class="n"><b>'+money(runC)+'</b>'+(lim?'<div class="sub">'+fmtL(runL)+'</div>':"")+'</td></tr>';}).join("");
+  return '<div class="balcard '+st.k+'"><div class="bc-top"><div><div class="bc-lbl">Remaining balance</div><div class="bc-big">'+money(Math.max(0,bal))+'</div>'+
+      (lim?'<div class="bc-sub">'+fmtL(Math.max(0,balL))+' of '+fmtL(rq.litres)+' left</div>':'<div class="bc-sub">No litre limit set</div>')+'</div><span class="pill '+st.k+'">'+(st.k==="crit"?"Balance depleted":st.t)+'</span></div>'+
+      balBar(rq)+
+      '<div class="bc-row"><div><span>Value</span>'+money(rq.amount)+'</div><div><span>Used</span>'+money(reqUsed(rq))+'</div><div><span>Litres used</span>'+fmtL(reqUsedL(rq))+'</div><div><span>Fills</span>'+fills.length+'</div></div></div>'+
+    (st.k==="crit"?'<div class="auth-msg" style="margin-top:10px">This '+(rq.kind==="PR"?"PR":"petty cash requisition")+' is used up. Add a new one to keep logging fuel for this vehicle.'+(isAdmin()?' <button type="button" class="linkbtn" data-act="newReqLike" data-id="'+esc(rq.id)+'">Add new '+(rq.kind==="PR"?"PR":"petty cash")+'</button>':' Ask an admin to add it.')+'</div>':"")+
+    '<div class="fsec">Fills charged to this '+(rq.kind==="PR"?"PR":"requisition")+'</div>'+
+    (fills.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>'+(rq.kind==="PR"?"PO no.":"Voucher no.")+'</th><th class="n">Litres</th><th class="n">Cost</th><th class="n">Balance after</th></tr></thead><tbody><tr><td colspan="4" class="hint">Opening value</td><td class="n">'+money(rq.amount)+(lim?'<div class="sub">'+fmtL(rq.litres)+'</div>':"")+'</td></tr>'+rows+'</tbody></table></div>':'<div class="hint">No fuel charged yet.</div>');
+}
+function openFuelView(id){
+  var r=Store.data.fuel_records.find(function(x){return x.id===id;}); if(!r) return;
+  var v=vehicleById(r.vehicleId), rq=reqById(r.requisitionId);
+  modalCtx={type:"viewFuel",id:id};
+  var body=dl([
+      ["Date",fmtDate(r.date)],["Vehicle",'<b>'+esc(vLabel(v))+'</b><div class="sub">'+esc(vName(v))+'</div>',1],["Fuel type",r.fuelType],
+      ["Litres",fmtL(r.litres)],["Rate per litre",r.rate?money(r.rate):"—"],["Total cost",'<b>'+money(r.total)+'</b>',1],
+      ["Odometer",r.odometer?num(r.odometer).toLocaleString()+" km":"—"],["Fuel station",r.station],["Filled by",r.filledBy],
+      [r.fundType==="Petty Cash"?"Voucher no.":"PO no.",r.poNo],["Delivery note no.",r.ref],["Delivery note",r.docUrl?spLink(r.docUrl,"Open delivery note"):"—",1]
+    ])+(r.notes?'<div class="fsec">Notes</div><div style="white-space:pre-wrap">'+esc(r.notes)+'</div>':"")+
+    (rq?'<div class="fsec">'+(rq.kind==="PR"?"PR":"Petty cash")+' '+esc(rq.refNo)+'</div>'+reqBalanceHtml(rq,r.id):'<div class="fsec">Funding</div><div class="hint">Not charged to a PR or petty cash requisition.</div>');
+  openModal("Fuel entry · "+esc(vLabel(v))+" · "+fmtDate(r.date),body,{wide:true,submit:"Edit entry",noFocus:true,cancel:"Close"});
+}
+function openReqView(id){
+  var rq=reqById(id); if(!rq) return; var v=vehicleById(rq.vehicleId);
+  modalCtx={type:"viewReq",id:id};
+  var body=dl([
+      ["Type",rq.kind==="PR"?"PR (Purchase Requisition)":"Petty Cash"],[rq.kind==="PR"?"PR no.":"Petty cash no.",'<b>'+esc(rq.refNo)+'</b>',1],["Date",fmtDate(rq.date)],
+      ["Vehicle",'<b>'+esc(vLabel(v))+'</b><div class="sub">'+esc(vName(v))+'</div>',1],["Fuel type",rq.fuelType],["Document",rq.docUrl?spLink(rq.docUrl,"Open document"):"—",1]
+    ])+(rq.notes?'<div class="fsec">Notes</div><div style="white-space:pre-wrap">'+esc(rq.notes)+'</div>':"")+
+    '<div class="fsec">Balance</div>'+reqBalanceHtml(rq);
+  openModal((rq.kind==="PR"?"PR ":"Petty cash ")+esc(rq.refNo),body,{wide:true,submit:"Edit requisition",noFocus:true,cancel:"Close"});
+}
+function showDepleted(rq){
+  modalCtx={type:"depleted",pre:{vehicleId:rq.vehicleId,fuelType:rq.fuelType,kind:rq.kind}};
+  var word=rq.kind==="PR"?"PR":"petty cash requisition", v=vehicleById(rq.vehicleId);
+  openModal("⚠ "+(rq.kind==="PR"?"PR":"Petty cash")+" balance depleted",
+    '<p style="margin-top:0"><b>'+esc(rq.refNo)+'</b> for <b>'+esc(vLabel(v))+'</b> ('+esc(rq.fuelType)+') has no balance left. No more fuel can be charged to it.</p>'+
+    reqBalanceHtml(rq)+'<p class="hint">'+(isAdmin()?'Add a new '+word+' so fuel can be logged for this vehicle.':'Please ask an admin to add a new '+word+'.')+'</p>',
+    {wide:true,submit:isAdmin()?"Add new "+(rq.kind==="PR"?"PR":"petty cash"):"OK",noFocus:true,cancel:"Later"});
+}
+
 /* ---------- Requisition form ---------- */
 function openReqForm(id,preset){
   var r=id?reqById(id):Object.assign({date:todayISO(),kind:"PR"},preset||{});
@@ -1182,8 +1267,8 @@ function openFuelForm(id){
     fld("Rate per litre ("+settings.currency+")","rate",r.rate,"number","",' data-calc')+
     fld('Total cost ('+settings.currency+') <span class="req">*</span>',"total",r.total,"number","",' data-reqamt')+
     fld("Odometer (km / hrs)","odometer",r.odometer,"number")+
-    fld("Fuel station","station",r.station)+fld("Receipt no.","ref",r.poNo?r.ref:"")+
-    fld("Filled by","filledBy",r.filledBy||userName)+fld("Receipt (SharePoint link)","docUrl",r.docUrl,"url")+
+    fld("Fuel station","station",r.station)+fld("Delivery note no.","ref",r.poNo?r.ref:"")+
+    fld("Filled by","filledBy",r.filledBy||userName)+fld("Delivery note (SharePoint link)","docUrl",r.docUrl,"url")+
     '<label class="span2">Notes<textarea name="notes">'+esc(r.notes||"")+'</textarea></label></div>',
     {del:id?"delFuel":null});
   refreshReqSelect(r.requisitionId);
@@ -1228,7 +1313,8 @@ async function saveFuel(form){
   if(num(o.odometer)){var v=vehicleById(o.vehicleId); if(v&&num(o.odometer)>num(v.mileage)) Store.save("vehicles",{id:v.id,mileage:o.odometer});}
   await Store.save("fuel_records",o); closeModal(); state.fuelTab="log"; render();
   var left=bal-num(o.total), leftL=balL===null?null:balL-num(o.litres);
-  toast("Fuel entry saved · "+reqLabel(rq)+" balance "+money(left)+(leftL!==null?" / "+fmtL(leftL):"")+(left<=0||(leftL!==null&&leftL<=0)?" — limit reached, add a new requisition":""));
+  toast("Fuel entry saved · "+reqLabel(rq)+" balance "+money(left)+(leftL!==null?" / "+fmtL(leftL):""));
+  if(left<=0.004||(leftL!==null&&leftL<=0.004)) setTimeout(function(){var fresh=reqById(rq.id);if(fresh)showDepleted(fresh);},350);
 }
 
 /* ---------- Service forms ---------- */
@@ -1473,6 +1559,9 @@ document.addEventListener("click",function(e){
       break;
     case "addFuel": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openFuelForm(null); break;
     case "editFuel": openFuelForm(id); break;
+    case "viewFuel": openFuelView(id); break;
+    case "viewReq": closeModal(); openReqView(id); break;
+    case "newReqLike": var sr=reqById(id); closeModal(); openReqForm(null,{vehicleId:sr.vehicleId,fuelType:sr.fuelType,kind:sr.kind}); break;
     case "addReqForVeh": closeDrawer(); openReqForm(null,{vehicleId:id}); break;
     case "addReq": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openReqForm(null,{vehicleId:state.fuelVeh||""}); break;
     case "editReq": openReqForm(id); break;
@@ -1533,6 +1622,9 @@ document.addEventListener("submit",async function(e){
       case "fuel": await saveFuel(f); break;
       case "req": await saveReq(f); break;
       case "info": closeModal(); break;
+      case "viewFuel": var vf=modalCtx.id; closeModal(); openFuelForm(vf); break;
+      case "viewReq": var vr=modalCtx.id; closeModal(); openReqForm(vr); break;
+      case "depleted": var pre=modalCtx.pre; closeModal(); if(isAdmin()) openReqForm(null,pre); break;
       case "service": await saveService(f); break;
       case "confirm": var fn=modalCtx.fn; closeModal(); await fn(); break;
       case "settings":
