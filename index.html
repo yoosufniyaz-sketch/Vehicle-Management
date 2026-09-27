@@ -191,6 +191,7 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 .imgpick .prev img{width:100%;height:100%;object-fit:contain}
 .sp-row{display:flex;gap:6px}
 .sp-row input{flex:1}
+.paste-btn{flex:none}
 
 /* Modal & drawer */
 .overlay{position:fixed;inset:0;background:rgba(10,14,20,.5);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:50}
@@ -472,6 +473,7 @@ function vehicleOpts(sel){return '<option value="">Select vehicle…</option>'+s
 function get(o,path){return path.split(".").reduce(function(a,k){return a==null?undefined:a[k];},o);}
 function fld(label,name,val,type,cls,extra){
   type=type||"text";
+  if(type==="url") return '<label class="'+(cls||"")+'"><span>'+label+'</span><div class="sp-row"><input type="text" inputmode="url" autocomplete="off" spellcheck="false" class="linkin" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(extra||"")+'><button type="button" class="btn sm paste-btn" data-act="pasteLink" title="Paste link from clipboard">Paste</button></div></label>';
   return '<label class="'+(cls||"")+'"><span>'+label+'</span><input type="'+type+'" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(type==="number"?' step="0.01" min="0"':"")+(extra||"")+'></label>';
 }
 function formToObj(form){
@@ -515,7 +517,7 @@ function maybeNotify(alerts){
 }
 
 /* ================= STATE & RENDER ================= */
-var state = {view:"vehicles", q:"", ftype:"", ffuel:"", fstatus:"", svcTab:"periodic", repPreset:"6m", repFrom:"", repTo:"", repVeh:"", repGran:"", fuelVeh:"", fuelMonth:"", fuelFund:"", fuelReq:"", fuelTab:"log", svcVeh:"", drawerId:null};
+var state = {view:"vehicles", q:"", ftype:"", ffuel:"", fstatus:"", svcTab:"periodic", repPreset:"6m", repFrom:"", repTo:"", repVeh:"", repGran:"", fuelQ:"", svcQ:"", fuelVeh:"", fuelMonth:"", fuelFund:"", fuelReq:"", fuelTab:"log", svcVeh:"", drawerId:null};
 var notifiedOnce=false;
 function render(){
   $$("#nav button").forEach(function(b){b.classList.toggle("on",b.dataset.view===state.view);});
@@ -629,6 +631,18 @@ function renderDrawer(){
 function spec(l,v){return '<div><span>'+l+'</span>'+esc(v||"—")+'</div>';}
 function byDateDesc(a,b){return String(b.date||"").localeCompare(String(a.date||""));}
 
+/* ---------- Search helper: every word typed must appear somewhere in the record ---------- */
+function matchQ(q,parts){
+  q=String(q||"").trim().toLowerCase(); if(!q) return true;
+  var hay=parts.map(function(x){return x==null?"":String(x);}).join(" ").toLowerCase();
+  return q.split(/\s+/).every(function(w){return hay.indexOf(w)>=0;});
+}
+function vehWords(id){var v=vehicleById(id);return v?[v.plate,v.make,v.model,v.type,v.assignedTo,v.department]:[];}
+function dateWords(iso){return iso?[iso,fmtDate(iso)]:[];}
+function fuelHay(r){var rq=reqById(r.requisitionId);return vehWords(r.vehicleId).concat(dateWords(r.date),[r.fuelType,r.fundType,r.fundType==="Petty Cash"?"PC":"",rq&&rq.refNo,r.poNo,r.ref,r.station,r.filledBy,r.notes,num(r.total).toFixed(2),num(r.litres).toFixed(2)]);}
+function reqHay(rq){return vehWords(rq.vehicleId).concat(dateWords(rq.date),[rq.kind,rq.kind==="Petty Cash"?"PC":"",rq.refNo,rq.fuelType,rq.notes,reqStatus(rq).t,num(rq.amount).toFixed(2)]);}
+function svcHay(r){return vehWords(r.vehicleId).concat(dateWords(r.date),[r.serviceType,r.type,r.vendor,r.notes,r.issue,r.status,r.reportedBy,r.odometer,num(r.cost).toFixed(2),r.nextDate?fmtDate(r.nextDate):""]);}
+
 /* ---------- Fuel requisitions (PR / Petty Cash) ---------- */
 var FUND_TYPES=[["PR","PR (Purchase Requisition)"],["Petty Cash","Petty Cash"]];
 function fundShort(k){return k==="PR"?"PR":"Petty Cash";}
@@ -680,12 +694,13 @@ function viewFueling(){
     kpi("Litres this month",L.toLocaleString("en-US",{maximumFractionDigits:1}),"",L?"Avg "+money(C/L)+" / L":"—")+
   '</div>'+
   '<div class="toolbar"><div class="tabs"><button data-act="fuelTab" data-tab="log" class="'+(tab==="log"?"on":"")+'">Fuel log ('+all.length+')</button><button data-act="fuelTab" data-tab="req" class="'+(tab==="req"?"on":"")+'">Requisitions ('+reqs.length+')</button></div>'+
+  '<input class="grow" type="search" data-bind="fuelQ" value="'+esc(state.fuelQ)+'" placeholder="'+(tab==="log"?"Search plate, PR / PO no., station, receipt…":"Search PR / petty cash no., plate, notes…")+'" aria-label="Search fueling">'+
   '<select data-bind="fuelVeh">'+vehicleOpts(state.fuelVeh).replace("Select vehicle…","All vehicles")+'</select>'+
   '<select data-bind="fuelFund">'+opts(FUND_TYPES,state.fuelFund,"PR & Petty Cash")+'</select>';
   if(tab==="log"){
     var months=Array.from(new Set(all.map(function(r){return String(r.date||"").slice(0,7);}).filter(Boolean))).sort().reverse();
     h+='<select data-bind="fuelMonth">'+opts(months.map(function(m){return [m,parseISO(m+"-01").toLocaleDateString("en-GB",{month:"long",year:"numeric"})];}),state.fuelMonth,"All months")+'</select></div>';
-    var list=all.filter(function(r){return (!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelMonth||String(r.date||"").slice(0,7)===state.fuelMonth)&&(!state.fuelFund||r.fundType===state.fuelFund)&&(!state.fuelReq||r.requisitionId===state.fuelReq);});
+    var list=all.filter(function(r){return matchQ(state.fuelQ,fuelHay(r))&&(!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelMonth||String(r.date||"").slice(0,7)===state.fuelMonth)&&(!state.fuelFund||r.fundType===state.fuelFund)&&(!state.fuelReq||r.requisitionId===state.fuelReq);});
     if(state.fuelReq){var fr=reqById(state.fuelReq);h+='<div class="row" style="margin:-4px 0 12px"><span class="pill acc">Showing entries for '+esc(fr?reqLabel(fr):"requisition")+'</span><button class="linkbtn" data-act="clearReqFilter">Show all</button></div>';}
     h+='<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Date</th><th>Vehicle</th><th>Fuel</th><th>Funding</th><th class="n">Litres</th><th class="n">Rate</th><th class="n">Total</th><th class="n">Odometer</th><th>Station</th><th></th></tr></thead><tbody>'+
       list.map(function(r){var v=vehicleById(r.vehicleId),rq=reqById(r.requisitionId);return '<tr><td>'+fmtDate(r.date)+'</td><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(r.fuelType||"—")+'</td>'+
@@ -695,7 +710,7 @@ function viewFueling(){
       '</tbody></table>':'<div class="empty">'+(all.length?"No entries match these filters.":"No fuel entries yet. Add a PR or Petty Cash requisition for a vehicle first, then log fuel against it.")+'</div>')+'</div></div>';
   } else {
     h+='</div>';
-    var rl=reqs.filter(function(r){return (!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelFund||r.kind===state.fuelFund);});
+    var rl=reqs.filter(function(r){return matchQ(state.fuelQ,reqHay(r))&&(!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelFund||r.kind===state.fuelFund);});
     h+='<div class="panel"><div class="tablewrap">'+(rl.length?'<table><thead><tr><th>Type</th><th>Ref no.</th><th>Vehicle</th><th>Fuel</th><th>Date</th><th class="n">Value / Litres</th><th class="n">Used</th><th class="n">Balance</th><th>Status</th><th></th></tr></thead><tbody>'+
       rl.map(function(rq){var v=vehicleById(rq.vehicleId),st=reqStatus(rq),n=Store.data.fuel_records.filter(function(f){return f.requisitionId===rq.id;}).length;
         return '<tr><td><span class="pill '+(rq.kind==="PR"?"acc":"")+'">'+esc(fundShort(rq.kind))+'</span></td><td class="mono">'+esc(rq.refNo||"—")+(rq.docUrl?'<div class="sub">'+spLink(rq.docUrl,"Document")+'</div>':"")+'</td>'+
@@ -705,7 +720,7 @@ function viewFueling(){
         '<td class="n"><b>'+money(Math.max(0,reqBalance(rq)))+'</b><div><b>'+(hasL(rq)?fmtL(Math.max(0,reqBalanceL(rq))):'<span class="hint">no litre limit</span>')+'</b></div>'+balBar(rq)+'</td>'+
         '<td><span class="pill '+st.k+'">'+st.t+'</span>'+(st.t==="Limit reached"?'<div class="sub">Add a new '+(rq.kind==="PR"?"PR":"petty cash")+'</div>':"")+'</td>'+
         '<td class="n"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">'+(n?'<button class="btn sm" data-act="viewReqEntries" data-id="'+esc(rq.id)+'">Entries</button>':"")+'<button class="btn sm" data-act="editReq" data-id="'+esc(rq.id)+'">Edit</button></div></td></tr>';}).join("")+
-      '</tbody></table>':'<div class="empty">No requisitions yet. Click <b>+ Fuel Requisition</b> to add a PR or Petty Cash amount for a vehicle.</div>')+'</div></div>';
+      '</tbody></table>':'<div class="empty">'+(reqs.length?'No requisitions match your search or filters.':'No requisitions yet. Click <b>+ Fuel Requisition</b> to add a PR or Petty Cash amount for a vehicle.')+'</div>')+'</div></div>';
   }
   return h;
 }
@@ -907,7 +922,7 @@ function viewServicing(){
   var yr=todayISO().slice(0,4), ytd=all.filter(function(r){return String(r.date||"").slice(0,4)===yr;});
   var open=inc.filter(function(r){return r.status!=="Resolved";}).length;
   var due=collectAlerts().filter(function(a){return a.s.label==="Periodic service";}).length;
-  var tab=state.svcTab, rows=(tab==="periodic"?per:inc).filter(function(r){return !state.svcVeh||r.vehicleId===state.svcVeh;});
+  var tab=state.svcTab, rows=(tab==="periodic"?per:inc).filter(function(r){return (!state.svcVeh||r.vehicleId===state.svcVeh)&&matchQ(state.svcQ,svcHay(r));});
   var h='<div class="top"><div><h1>Servicing</h1><p>Periodic maintenance and incidental repairs.</p></div><div class="row">'+
     '<button class="btn" data-act="addIncident">+ Report Issue</button><button class="btn primary" data-act="addPeriodic">+ Periodic Service</button></div></div>'+
   '<div class="kpis">'+kpi("Service cost "+yr,money0(sum(ytd,"cost")),"",ytd.length+" records")+
@@ -915,9 +930,10 @@ function viewServicing(){
     kpi("Open issues",open,open?"warn":"","Incidental, not resolved")+
     kpi("Services due ≤ "+settings.remindDays+"d",due,due?"warn":"","Based on next service date")+'</div>'+
   '<div class="toolbar"><div class="tabs"><button data-act="svcTab" data-tab="periodic" class="'+(tab==="periodic"?"on":"")+'">Periodic ('+per.length+')</button><button data-act="svcTab" data-tab="incident" class="'+(tab==="incident"?"on":"")+'">Incidental ('+inc.length+')</button></div>'+
+  '<input class="grow" type="search" data-bind="svcQ" value="'+esc(state.svcQ)+'" placeholder="'+(tab==="periodic"?"Search plate, service type, workshop, notes…":"Search plate, issue, status, workshop…")+'" aria-label="Search servicing">'+
   '<select data-bind="svcVeh">'+vehicleOpts(state.svcVeh).replace("Select vehicle…","All vehicles")+'</select></div>';
   h+='<div class="panel"><div class="tablewrap">';
-  if(!rows.length) h+='<div class="empty">No '+(tab==="periodic"?"periodic service records":"incidental issues")+' yet.</div>';
+  if(!rows.length) h+='<div class="empty">'+((state.svcQ||state.svcVeh)&&(tab==="periodic"?per:inc).length?"No records match your search.":"No "+(tab==="periodic"?"periodic service records":"incidental issues")+" yet.")+'</div>';
   else if(tab==="periodic") h+='<table><thead><tr><th>Date</th><th>Vehicle</th><th>Service</th><th class="n">Odometer</th><th>Vendor</th><th class="n">Cost</th><th>Next service</th><th></th></tr></thead><tbody>'+rows.map(function(r){var v=vehicleById(r.vehicleId),st=r.nextDate?expiryState(r.nextDate):null;return '<tr><td>'+fmtDate(r.date)+'</td><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(r.serviceType||r.type||"—")+(r.notes?'<div class="sub">'+esc(r.notes)+'</div>':"")+'</td><td class="n">'+(r.odometer?num(r.odometer).toLocaleString():"—")+'</td><td>'+esc(r.vendor||"—")+'</td><td class="n">'+(r.cost?money(r.cost):"—")+'</td><td>'+(r.nextDate?fmtDate(r.nextDate)+' <span class="pill '+st.k+'">'+(st.d<0?"Overdue":st.k==="warn"?"Due soon":"Scheduled")+'</span>':"")+(r.nextOdometer?'<div class="sub">or '+num(r.nextOdometer).toLocaleString()+' km</div>':"")+(!r.nextDate&&!r.nextOdometer?"—":"")+'</td><td class="n"><button class="btn sm" data-act="editService" data-id="'+esc(r.id)+'">Edit</button></td></tr>';}).join("")+'</tbody></table>';
   else h+='<table><thead><tr><th>Date of issue</th><th>Vehicle</th><th>Issue</th><th>Status</th><th>Vendor</th><th class="n">Cost</th><th></th></tr></thead><tbody>'+rows.map(function(r){var v=vehicleById(r.vehicleId),k=r.status==="Resolved"?"good":r.status==="In progress"?"acc":"warn";return '<tr><td>'+fmtDate(r.date)+'</td><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td style="max-width:320px;white-space:pre-wrap">'+esc(r.issue||"—")+'</td><td><span class="pill '+k+'">'+esc(r.status||"Open")+'</span>'+(r.resolvedDate?'<div class="sub">'+fmtDate(r.resolvedDate)+'</div>':"")+'</td><td>'+esc(r.vendor||"—")+'</td><td class="n">'+(r.cost?money(r.cost):"—")+'</td><td class="n"><button class="btn sm" data-act="editService" data-id="'+esc(r.id)+'">Edit</button></td></tr>';}).join("")+'</tbody></table>';
   h+='</div></div>';
@@ -1006,7 +1022,7 @@ function vehicleForm(v){
     fld("Odometer (km / hrs)","mileage",v.mileage,"number")+
   '</div>'+
   '<div class="fsec">Statutory documents · Microsoft SharePoint</div>'+
-  '<label>SharePoint documents folder for this vehicle<div class="sp-row"><input type="url" name="spFolder" placeholder="https://yourcompany.sharepoint.com/sites/…/Vehicles/P1234" value="'+esc(v.spFolder||"")+'">'+sp+'</div><span class="hint">Paste the link to the vehicle\'s folder. For each document below, paste its SharePoint "Copy link" URL.</span></label>'+
+  '<label>SharePoint documents folder for this vehicle<div class="sp-row"><input type="text" inputmode="url" autocomplete="off" spellcheck="false" class="linkin" name="spFolder" placeholder="https://yourcompany.sharepoint.com/sites/…/Vehicles/P1234" value="'+esc(v.spFolder||"")+'"><button type="button" class="btn sm paste-btn" data-act="pasteLink" title="Paste link from clipboard">Paste</button>'+sp+'</div><span class="hint">Paste the link to the vehicle\'s folder. For each document below, paste its SharePoint "Copy link" URL.</span></label>'+
   '<div class="grid" style="margin-top:14px">'+
   '<fieldset><legend>Vehicle Registry</legend><div class="grid g3">'+
     fld("Registration date","registry.date",reg.date,"date")+fld("Registered owner","registry.owner",reg.owner)+fld("Certificate no.","registry.certNo",reg.certNo)+
@@ -1358,6 +1374,17 @@ document.addEventListener("click",function(e){
   if(a.dataset.act==="changePw" && currentUser) firebase.auth().sendPasswordResetEmail(currentUser.email).then(function(){toast("Reset link sent to "+currentUser.email);}).catch(function(err){toast(authErr(err));});
 });
 
+/* ---------- Link fields: accept pasted SharePoint links in any format ---------- */
+function cleanLink(t){t=String(t||"").trim();var m=t.match(/https?:\/\/[^\s"'<>]+/i);return m?m[0]:t.replace(/\s+/g," ");}
+document.addEventListener("paste",function(e){
+  var t=e.target; if(!t.classList||!t.classList.contains("linkin")||!e.clipboardData) return;
+  var plain=e.clipboardData.getData("text/plain")||"", html=e.clipboardData.getData("text/html")||"", url="";
+  var hm=html.match(/href="([^"]+)"/i); if(hm) url=hm[1].replace(/&amp;/g,"&");
+  if(!url) url=cleanLink(plain);
+  if(!url) return;               // nothing usable — let the browser do its normal paste
+  e.preventDefault(); t.value=url; t.dispatchEvent(new Event("input",{bubbles:true}));
+});
+
 /* ================= EVENTS ================= */
 document.addEventListener("click",function(e){
   var nb=e.target.closest("#nav button"); if(nb){Nav.go(nb.dataset.view);return;}
@@ -1371,6 +1398,13 @@ document.addEventListener("click",function(e){
     case "openVehicle": if(id&&vehicleById(id)) openDrawer(id); break;
     case "closeDrawer": closeDrawer(); break;
     case "closeModal": closeModal(); break;
+    case "pasteLink":
+      var inp=a.parentNode.querySelector("input");
+      if(navigator.clipboard&&navigator.clipboard.readText){
+        navigator.clipboard.readText().then(function(t){t=cleanLink(t);if(!t){toast("Clipboard is empty — copy the SharePoint link first");return;}inp.value=t;inp.dispatchEvent(new Event("input",{bubbles:true}));toast("Link pasted");})
+          .catch(function(){inp.focus();toast("Click in the box and press Ctrl+V (⌘+V on Mac) to paste");});
+      } else { inp.focus(); toast("Click in the box and press Ctrl+V (⌘+V on Mac) to paste"); }
+      break;
     case "zoomImg": var zv=vehicleById(state.drawerId); if(zv&&zv.image){openLightbox(zv.image);} break;
     case "closeLightbox": closeLightbox(); break;
     case "renew": openRenew(id,a.dataset.key); break;
