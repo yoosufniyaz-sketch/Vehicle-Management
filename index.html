@@ -191,6 +191,13 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 .imgpick .prev img{width:100%;height:100%;object-fit:contain}
 .sp-row{display:flex;gap:6px}
 .sp-row input{flex:1}
+.dpick{position:relative;display:block;min-width:130px}
+.dpick .dtext{padding-right:36px;font-variant-numeric:tabular-nums}
+.dpick .dtext.bad{border-color:var(--critical);outline-color:var(--critical)}
+.dpick .dicon{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--steel);pointer-events:none;display:flex}
+.dpick .dnative{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;padding:0;border:0;opacity:0;cursor:pointer}
+.dpick .dnative::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:auto;height:auto;cursor:pointer}
+.rep-filters .dpick{width:150px}
 .paste-btn{flex:none}
 
 /* Modal & drawer */
@@ -446,7 +453,27 @@ function money0(v){return settings.currency+" "+Math.round(num(v)).toLocaleStrin
 function todayISO(){var d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
 function parseISO(s){var p=String(s).split("-");return new Date(+p[0],+p[1]-1,+p[2]);}
 function daysUntil(iso){var t=new Date();t.setHours(0,0,0,0);return Math.round((parseISO(iso)-t)/864e5);}
-function fmtDate(iso){if(!iso)return "—";var d=parseISO(iso);return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}
+function fmtDate(iso){if(!iso)return "—";var m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+"/"+m[2]+"/"+m[1]:"—";}
+/* Date fields: typed and shown as dd/mm/yyyy, stored as yyyy-mm-dd.
+   A hidden native date input supplies the calendar pop-up. */
+function dateField(name,val,extra,attrs){
+  val=val||"";
+  return '<span class="dpick"><input type="text" class="dtext" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="dd/mm/yyyy" value="'+esc(fmtDate(val)==="—"?"":fmtDate(val))+'"'+(attrs||"")+'>'+
+    '<input type="hidden" data-date'+(name?' name="'+name+'"':"")+' value="'+esc(val)+'"'+(extra||"")+'>'+
+    '<span class="dicon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3"/></svg></span>'+
+    '<input type="date" class="dnative" tabindex="-1" aria-label="Open calendar" value="'+esc(val)+'"></span>';
+}
+function dmyToISO(t){
+  var m=String(t||"").trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/); if(!m) return null;
+  var d=+m[1],mo=+m[2],y=+m[3],dt=new Date(y,mo-1,d);
+  if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d) return null;
+  return y+"-"+String(mo).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+}
+function setDateVal(hidden,iso,silent){
+  var w=hidden.closest(".dpick"); hidden.value=iso||"";
+  if(w){w.querySelector(".dtext").value=iso?fmtDate(iso):"";w.querySelector(".dnative").value=iso||"";w.querySelector(".dtext").classList.remove("bad");}
+  if(!silent) hidden.dispatchEvent(new Event("change",{bubbles:true}));
+}
 function addMonths(iso,m){var d=parseISO(iso);d.setMonth(d.getMonth()+m);d.setDate(d.getDate()-1);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
 function durationText(a,b){
   if(!a||!b) return "—";
@@ -473,6 +500,7 @@ function vehicleOpts(sel){return '<option value="">Select vehicle…</option>'+s
 function get(o,path){return path.split(".").reduce(function(a,k){return a==null?undefined:a[k];},o);}
 function fld(label,name,val,type,cls,extra){
   type=type||"text";
+  if(type==="date") return '<label class="'+(cls||"")+'"><span>'+label+'</span>'+dateField(name,val,extra)+'</label>';
   if(type==="url") return '<label class="'+(cls||"")+'"><span>'+label+'</span><div class="sp-row"><input type="text" inputmode="url" autocomplete="off" spellcheck="false" class="linkin" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(extra||"")+'><button type="button" class="btn sm paste-btn" data-act="pasteLink" title="Paste link from clipboard">Paste</button></div></label>';
   return '<label class="'+(cls||"")+'"><span>'+label+'</span><input type="'+type+'" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(type==="number"?' step="0.01" min="0"':"")+(extra||"")+'></label>';
 }
@@ -789,8 +817,8 @@ function viewReports(){
     '<div class="row"><button class="btn" data-act="repCsv">Export CSV</button><button class="btn" data-act="repPrint">Print</button></div></div>'+
   '<div class="toolbar rep-filters">'+
     '<div class="tabs">'+presets.map(function(p){return '<button data-act="repPreset" data-p="'+p[0]+'" class="'+(state.repPreset===p[0]?"on":"")+'">'+p[1]+'</button>';}).join("")+'</div>'+
-    '<label class="inl">From<input type="date" data-bind="repFrom" value="'+esc(D.from)+'"></label>'+
-    '<label class="inl">To<input type="date" data-bind="repTo" value="'+esc(D.to)+'"></label>'+
+    '<label class="inl">From'+dateField("",D.from,' data-bind="repFrom"')+'</label>'+
+    '<label class="inl">To'+dateField("",D.to,' data-bind="repTo"')+'</label>'+
     '<select data-bind="repVeh">'+vehicleOpts(state.repVeh).replace("Select vehicle…","All vehicles")+'</select>'+
     '<select data-bind="repGran">'+opts([["day","Daily"],["week","Weekly"],["month","Monthly"]],state.repGran,"Auto ("+({day:"daily",week:"weekly",month:"monthly"})[D.g]+")")+'</select>'+
   '</div>'+
@@ -1374,6 +1402,36 @@ document.addEventListener("click",function(e){
   if(a.dataset.act==="changePw" && currentUser) firebase.auth().sendPasswordResetEmail(currentUser.email).then(function(){toast("Reset link sent to "+currentUser.email);}).catch(function(err){toast(authErr(err));});
 });
 
+/* ---------- Date fields (dd/mm/yyyy) ---------- */
+document.addEventListener("input",function(e){
+  var t=e.target;
+  if(t.classList&&t.classList.contains("dtext")){
+    var raw=t.value, digits=raw.replace(/\D/g,"").slice(0,8);
+    var deleting=String(e.inputType||"").indexOf("delete")===0;
+    if(!deleting&&!/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4}$/.test(raw)){ // typing digits: auto-insert the slashes
+      var out=digits.slice(0,2); if(digits.length>2) out+="/"+digits.slice(2,4); if(digits.length>4) out+="/"+digits.slice(4,8);
+      t.value=out;
+    }
+    var hid=t.parentNode.querySelector("[data-date]"), iso=dmyToISO(t.value);
+    if(iso){t.classList.remove("bad"); if(hid.value!==iso){hid.value=iso;t.parentNode.querySelector(".dnative").value=iso;hid.dispatchEvent(new Event("change",{bubbles:true}));}}
+    else if(!t.value.trim()&&hid.value&&!hid.hasAttribute("data-bind")){hid.value="";hid.dispatchEvent(new Event("change",{bubbles:true}));}
+  }
+  if(t.classList&&t.classList.contains("dnative")){ // picked from calendar
+    var h=t.parentNode.querySelector("[data-date]"); if(t.value) setDateVal(h,t.value);
+  }
+},true);
+document.addEventListener("focusout",function(e){
+  var t=e.target; if(!t.classList||!t.classList.contains("dtext")) return;
+  var v=t.value.trim(); if(!v){t.classList.remove("bad");return;}
+  var iso=dmyToISO(v); if(iso){t.value=fmtDate(iso);t.classList.remove("bad");}
+  else {t.classList.add("bad");toast("Please enter the date as dd/mm/yyyy, e.g. 31/03/2027");}
+});
+document.addEventListener("click",function(e){
+  var n=e.target.closest&&e.target.closest(".dnative"); if(!n) return;
+  var h=n.parentNode.querySelector("[data-date]"); n.value=h.value||"";
+  if(n.showPicker){try{n.showPicker();}catch(err){}}
+});
+
 /* ---------- Link fields: accept pasted SharePoint links in any format ---------- */
 function cleanLink(t){t=String(t||"").trim();var m=t.match(/https?:\/\/[^\s"'<>]+/i);return m?m[0]:t.replace(/\s+/g," ");}
 document.addEventListener("paste",function(e){
@@ -1451,13 +1509,13 @@ document.addEventListener("change",async function(e){
     catch(err){toast("Could not change access: "+(err.code||err.message));render();}
     return;
   }
-  if(b&&(t.tagName==="SELECT"||t.type==="date")){state[b]=t.value;if(b==="repFrom"||b==="repTo")state.repPreset="";render();return;}
+  if(b&&(t.tagName==="SELECT"||t.hasAttribute("data-date"))){state[b]=t.value;if(b==="repFrom"||b==="repTo")state.repPreset="";render();return;}
   if(t.id==="imgFile"&&t.files[0]){
     try{pendingImage=await compressImage(t.files[0]);$("#imgPrev").innerHTML='<img src="'+pendingImage+'" alt="">';}catch(err){toast("Could not read that image");}
   }
   if(t.hasAttribute("data-dur")||t.hasAttribute("data-dur-start")){
     var fs=t.closest("fieldset"), st=fs.querySelector("[data-dur-start]"), du=fs.querySelector("[data-dur]"), en=fs.querySelector("[data-dur-end]");
-    if(st.value&&du.value) en.value=addMonths(st.value,+du.value);
+    if(st.value&&du.value) setDateVal(en,addMonths(st.value,+du.value),true);
   }
   if(t.hasAttribute("data-dur-end")){var fs2=t.closest("fieldset");fs2.querySelector("[data-dur]").value="";}
   if(t.hasAttribute("data-fuelveh")||t.hasAttribute("data-reqveh")){var v=vehicleById(t.value);if(v&&v.fuelType)t.form.fuelType.value=v.fuelType;}
