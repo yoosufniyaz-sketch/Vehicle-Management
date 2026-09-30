@@ -247,6 +247,7 @@ tr.clickrow{cursor:pointer}tr.clickrow:hover td{background:var(--surface-2)}
 input.calc{background:var(--accent-soft);border-color:var(--accent)}
 @keyframes nudge{0%,100%{transform:none}30%{transform:scale(1.012)}60%{transform:scale(.996)}}
 .modal.nudge{animation:nudge .25s ease}
+.fund-ref,td span.mono{white-space:nowrap}
 tr.hl td{background:var(--accent-soft)}
 @media (max-width:560px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bc-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .vp-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--steel);font-weight:500;margin-bottom:6px}
@@ -269,7 +270,9 @@ body:not(.is-admin) .admin-only,
 body:not(.is-admin) [data-act="addVehicle"],body:not(.is-admin) [data-act="addFuel"],body:not(.is-admin) [data-act="addReq"],
 body:not(.is-admin) [data-act="addReqForVeh"],body:not(.is-admin) [data-act="addReqFromFuel"],body:not(.is-admin) [data-act="addPeriodic"],
 body:not(.is-admin) [data-act="addIncident"],body:not(.is-admin) [data-act="delVehicle"],body:not(.is-admin) [data-act="delFuel"],
-body:not(.is-admin) [data-act="delReq"],body:not(.is-admin) [data-act="delService"]{display:none!important}
+body:not(.is-admin) [data-act="delReq"],body:not(.is-admin) [data-act="delService"],
+body:not(.is-admin) [data-act="editVehicle"],body:not(.is-admin) [data-act="editFuel"],body:not(.is-admin) [data-act="editReq"],
+body:not(.is-admin) [data-act="editService"],body:not(.is-admin) [data-act="renew"]{display:none!important}
 .member-note{display:none}body:not(.is-admin) .member-note{display:inline}
 .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mobile-tools{display:none}
@@ -416,7 +419,7 @@ function isOwnerEmail(e){return OWNER_EMAILS.indexOf(String(e||"").toLowerCase()
 function myProfile(){return currentUser?Store.data.users.find(function(u){return u.id===currentUser.uid;}):null;}
 function isAdmin(){if(!currentUser)return false;if(isOwnerEmail(currentUser.email))return true;var p=myProfile();return !!p&&p.role==="admin";}
 function roleOf(u){return isOwnerEmail(u.email)?"owner":(u.role==="admin"?"admin":"member");}
-var ADMIN_ACTS=["newReqLike","addVehicle","addFuel","addReq","addReqForVeh","addReqFromFuel","addPeriodic","addIncident","delVehicle","delFuel","delReq","delService","setRole"];
+var ADMIN_ACTS=["newReqLike","addVehicle","addFuel","addReq","addReqForVeh","addReqFromFuel","addPeriodic","addIncident","delVehicle","delFuel","delReq","delService","setRole","editVehicle","editFuel","editReq","editService","renew","clearImg"];
 var currentUser = null;
 var userName = "";
 
@@ -795,11 +798,11 @@ function viewFueling(){
     h+='<select data-bind="fuelMonth">'+opts(months.map(function(m){return [m,parseISO(m+"-01").toLocaleDateString("en-GB",{month:"long",year:"numeric"})];}),state.fuelMonth,"All months")+'</select></div>';
     var list=all.filter(function(r){return matchQ(state.fuelQ,fuelHay(r))&&(!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelMonth||String(r.date||"").slice(0,7)===state.fuelMonth)&&(!state.fuelFund||r.fundType===state.fuelFund)&&(!state.fuelReq||r.requisitionId===state.fuelReq);});
     if(state.fuelReq){var fr=reqById(state.fuelReq);h+='<div class="row" style="margin:-4px 0 12px"><span class="pill acc">Showing entries for '+esc(fr?reqLabel(fr):"requisition")+'</span><button class="linkbtn" data-act="clearReqFilter">Show all</button></div>';}
-    h+='<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Date</th><th>Vehicle</th><th>Fuel</th><th>Funding</th><th class="n">Litres</th><th class="n">Rate</th><th class="n">Total</th><th class="n">Odometer</th><th>Station</th><th></th></tr></thead><tbody>'+
+    h+='<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Date</th><th>Vehicle</th><th>Fuel</th><th>Funding</th><th class="n">Litres</th><th class="n">Rate</th><th class="n">Total</th><th>Station</th><th></th></tr></thead><tbody>'+
       list.map(function(r){var v=vehicleById(r.vehicleId),rq=reqById(r.requisitionId);return '<tr><td>'+fmtDate(r.date)+'</td><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(r.fuelType||"—")+'</td>'+
-        '<td>'+(r.fundType?'<span class="pill '+(r.fundType==="PR"?"acc":"")+'">'+esc(fundShort(r.fundType))+'</span> <span class="mono" style="font-size:12.5px">'+esc(rq?rq.refNo:"")+'</span><div class="sub">'+(r.poNo?(r.fundType==="PR"?"PO ":"Voucher ")+esc(r.poNo):"")+'</div>':'<span class="hint">—</span>')+'</td>'+
-        '<td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+(r.rate?money(r.rate):"—")+'</td><td class="n"><b>'+money(r.total)+'</b></td><td class="n">'+(r.odometer?num(r.odometer).toLocaleString():"—")+'</td><td>'+esc(r.station||"—")+(r.ref?'<div class="sub">DN '+esc(r.ref)+'</div>':"")+'</td><td class="n"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="viewFuel" data-id="'+esc(r.id)+'">View</button><button class="btn sm" data-act="editFuel" data-id="'+esc(r.id)+'">Edit</button></div></td></tr>';}).join("")+
-      '<tr class="tot"><td colspan="4"><b>Total</b> <span class="hint">('+list.length+' entries)</span></td><td class="n"><b>'+sum(list,"litres").toFixed(2)+'</b></td><td></td><td class="n"><b>'+money(sum(list,"total"))+'</b></td><td colspan="3"></td></tr>'+
+        '<td>'+(r.fundType?'<span class="pill '+(r.fundType==="PR"?"acc":"")+'">'+esc(fundShort(r.fundType))+'</span> <span class="mono fund-ref" style="font-size:12.5px">'+esc(rq?rq.refNo:"")+'</span><div class="sub">'+(r.poNo?(r.fundType==="PR"?"PO ":"Voucher ")+esc(r.poNo):"")+'</div>':'<span class="hint">—</span>')+'</td>'+
+        '<td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+(r.rate?money(r.rate):"—")+'</td><td class="n"><b>'+money(r.total)+'</b></td><td>'+esc(r.station||"—")+(r.ref?'<div class="sub">DN '+esc(r.ref)+'</div>':"")+'</td><td class="n"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="viewFuel" data-id="'+esc(r.id)+'">View</button><button class="btn sm" data-act="editFuel" data-id="'+esc(r.id)+'">Edit</button></div></td></tr>';}).join("")+
+      '<tr class="tot"><td colspan="4"><b>Total</b> <span class="hint">('+list.length+' entries)</span></td><td class="n"><b>'+sum(list,"litres").toFixed(2)+'</b></td><td></td><td class="n"><b>'+money(sum(list,"total"))+'</b></td><td colspan="2"></td></tr>'+
       '</tbody></table>':'<div class="empty">'+(all.length?"No entries match these filters.":"No fuel entries yet. Add a PR or Petty Cash requisition for a vehicle first, then log fuel against it.")+'</div>')+'</div></div>';
   } else {
     h+='</div>';
@@ -993,8 +996,8 @@ function viewUsers(){
   var q=(state.userQ||"").toLowerCase();
   var list=us.filter(function(u){return !q||[u.name,u.email].join(" ").toLowerCase().indexOf(q)>=0;});
   var admins=us.filter(function(u){return roleOf(u)!=="member";}).length;
-  var h='<div class="top"><div><h1>User Management</h1><p>Everyone who has registered. Admins can add and delete records and manage users; members can view and edit.</p></div></div>'+
-  '<div class="kpis">'+kpi("Registered users",us.length,"","")+kpi("Admins",admins,"","Including owner")+kpi("Members",us.length-admins,"","View & edit")+
+  var h='<div class="top"><div><h1>User Management</h1><p>Everyone who has registered. Admins can add, edit and delete records and manage users; members can view only.</p></div></div>'+
+  '<div class="kpis">'+kpi("Registered users",us.length,"","")+kpi("Admins",admins,"","Including owner")+kpi("Members",us.length-admins,"","View only")+
     kpi("Active last 7 days",us.filter(function(u){return u.lastLogin&&Date.now()-u.lastLogin<7*864e5;}).length,"","Signed in")+'</div>'+
   '<div class="toolbar"><input class="grow" type="search" placeholder="Search name or email…" value="'+esc(state.userQ||"")+'" data-bind="userQ"></div>'+
   '<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Name</th><th>Email</th><th>Access</th><th>Last sign-in</th><th>Registered</th></tr></thead><tbody>'+
@@ -1037,7 +1040,7 @@ function viewServicing(){
 var modalCtx=null;
 function openModal(title,body,opts2){
   opts2=opts2||{};
-  $("#overlay").innerHTML='<form class="modal '+(opts2.wide?"wide":"")+'" id="mform" novalidate><div class="modal-h"><h2>'+title+'</h2><button type="button" class="x" data-act="closeModal" aria-label="Close">×</button></div><div class="modal-b">'+body+'</div><div class="modal-f">'+(opts2.del?'<button type="button" class="btn danger" data-act="'+opts2.del+'" style="margin-right:auto">Delete</button>':"")+'<button type="button" class="btn" data-act="closeModal">'+(opts2.cancel||"Cancel")+'</button><button type="submit" class="btn primary">'+(opts2.submit||"Save")+'</button></div></form>';
+  $("#overlay").innerHTML='<form class="modal '+(opts2.wide?"wide":"")+'" id="mform" novalidate><div class="modal-h"><h2>'+title+'</h2><button type="button" class="x" data-act="closeModal" aria-label="Close">×</button></div><div class="modal-b">'+body+'</div><div class="modal-f">'+(opts2.del?'<button type="button" class="btn danger" data-act="'+opts2.del+'" style="margin-right:auto">Delete</button>':"")+'<button type="button" class="btn" data-act="closeModal">'+(opts2.cancel||"Cancel")+'</button>'+(opts2.submit===false?'':'<button type="submit" class="btn primary">'+(opts2.submit||"Save")+'</button>')+'</div></form>';
   Nav.openLayer();
   $("#overlay").hidden=false;
   var f=$("#mform input:not([type=file]),#mform select,#mform textarea"); if(f&&!opts2.noFocus) f.focus();
@@ -1223,11 +1226,11 @@ function openFuelView(id){
   var body=dl([
       ["Date",fmtDate(r.date)],["Vehicle",'<b>'+esc(vLabel(v))+'</b><div class="sub">'+esc(vName(v))+'</div>',1],["Fuel type",r.fuelType],
       ["Litres",fmtL(r.litres)],["Rate per litre",r.rate?money(r.rate):"—"],["Total cost",'<b>'+money(r.total)+'</b>',1],
-      ["Odometer",r.odometer?num(r.odometer).toLocaleString()+" km":"—"],["Fuel station",r.station],["Filled by",r.filledBy],
+      ["Fuel station",r.station],["Filled by",r.filledBy],
       [r.fundType==="Petty Cash"?"Voucher no.":"PO no.",r.poNo],["Delivery note no.",r.ref],["Delivery note",r.docUrl?spLink(r.docUrl,"Open delivery note"):"—",1]
     ])+(r.notes?'<div class="fsec">Notes</div><div style="white-space:pre-wrap">'+esc(r.notes)+'</div>':"")+
     (rq?'<div class="fsec">'+(rq.kind==="PR"?"PR":"Petty cash")+' '+esc(rq.refNo)+'</div>'+reqBalanceHtml(rq,r.id):'<div class="fsec">Funding</div><div class="hint">Not charged to a PR or petty cash requisition.</div>');
-  openModal("Fuel entry · "+esc(vLabel(v))+" · "+fmtDate(r.date),body,{wide:true,submit:"Edit entry",noFocus:true,cancel:"Close"});
+  openModal("Fuel entry · "+esc(vLabel(v))+" · "+fmtDate(r.date),body,{wide:true,submit:isAdmin()?"Edit entry":false,noFocus:true,cancel:"Close"});
 }
 function openReqView(id){
   var rq=reqById(id); if(!rq) return;
@@ -1237,7 +1240,7 @@ function openReqView(id){
       [reqVehs(rq).length>1?"Vehicles ("+reqVehs(rq).length+")":"Vehicle",reqVehs(rq).map(function(id){var v=vehicleById(id);return '<div><b>'+esc(vLabel(v))+'</b> <span class="hint">'+esc(vName(v))+'</span></div>';}).join(""),1],["Fuel type",rq.fuelType],["Document",rq.docUrl?spLink(rq.docUrl,"Open document"):"—",1]
     ])+(rq.notes?'<div class="fsec">Notes</div><div style="white-space:pre-wrap">'+esc(rq.notes)+'</div>':"")+
     '<div class="fsec">Balance</div>'+reqBalanceHtml(rq);
-  openModal((rq.kind==="PR"?"PR ":"Petty cash ")+esc(rq.refNo),body,{wide:true,submit:"Edit requisition",noFocus:true,cancel:"Close"});
+  openModal((rq.kind==="PR"?"PR ":"Petty cash ")+esc(rq.refNo),body,{wide:true,submit:isAdmin()?"Edit requisition":false,noFocus:true,cancel:"Close"});
 }
 function showDepleted(rq){
   modalCtx={type:"depleted",pre:{vehicleIds:reqVehs(rq),fuelType:rq.fuelType,kind:rq.kind}};
@@ -1352,7 +1355,7 @@ function openFuelForm(id){
     fld('Litres <span class="req">*</span>',"litres",r.litres,"number","",' data-calc')+
     fld("Rate per litre ("+settings.currency+")","rate",r.rate,"number","",' data-calc')+
     fld('Total cost ('+settings.currency+') <span class="req">*</span>',"total",r.total,"number","",' data-calc')+
-    fld("Odometer (km / hrs)","odometer",r.odometer,"number")+
+    
     fld("Fuel station","station",r.station)+fld("Delivery note no.","ref",r.poNo?r.ref:"")+
     fld("Filled by","filledBy",r.filledBy||userName)+fld("Delivery note (SharePoint link)","docUrl",r.docUrl,"url")+
     '<label class="span2">Notes<textarea name="notes">'+esc(r.notes||"")+'</textarea></label></div>',
@@ -1622,7 +1625,7 @@ document.addEventListener("click",function(e){
   if(e.target.id==="overlay"){var md=$("#overlay .modal");if(md){md.classList.remove("nudge");void md.offsetWidth;md.classList.add("nudge");}return;} // clicking outside keeps the form open
   var a=e.target.closest("[data-act]"); if(!a) return;
   var id=a.dataset.id, act=a.dataset.act;
-  if(ADMIN_ACTS.indexOf(act)>=0&&!isAdmin()){toast("Only admins can add or delete records");return;}
+  if(ADMIN_ACTS.indexOf(act)>=0&&!isAdmin()){toast("Only admins can add, edit or delete records");return;}
   switch(act){
     case "addVehicle": openVehicleForm(null); break;
     case "editVehicle": openVehicleForm(id); break;
@@ -1718,8 +1721,8 @@ document.addEventListener("submit",async function(e){
       case "fuel": await saveFuel(f); break;
       case "req": await saveReq(f); break;
       case "info": closeModal(); break;
-      case "viewFuel": var vf=modalCtx.id; closeModal(); openFuelForm(vf); break;
-      case "viewReq": var vr=modalCtx.id; closeModal(); openReqForm(vr); break;
+      case "viewFuel": if(!isAdmin())break; var vf=modalCtx.id; closeModal(); openFuelForm(vf); break;
+      case "viewReq": if(!isAdmin())break; var vr=modalCtx.id; closeModal(); openReqForm(vr); break;
       case "depleted": var pre=modalCtx.pre; closeModal(); if(isAdmin()) openReqForm(null,pre); break;
       case "service": await saveService(f); break;
       case "confirm": var fn=modalCtx.fn; closeModal(); await fn(); break;
