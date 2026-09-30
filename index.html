@@ -245,6 +245,8 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 td.mono{white-space:nowrap}
 tr.clickrow{cursor:pointer}tr.clickrow:hover td{background:var(--surface-2)}
 input.calc{background:var(--accent-soft);border-color:var(--accent)}
+@keyframes nudge{0%,100%{transform:none}30%{transform:scale(1.012)}60%{transform:scale(.996)}}
+.modal.nudge{animation:nudge .25s ease}
 tr.hl td{background:var(--accent-soft)}
 @media (max-width:560px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bc-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .vp-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--steel);font-weight:500;margin-bottom:6px}
@@ -1617,7 +1619,7 @@ document.addEventListener("paste",function(e){
 /* ================= EVENTS ================= */
 document.addEventListener("click",function(e){
   var nb=e.target.closest("#nav button"); if(nb){Nav.go(nb.dataset.view);return;}
-  if(e.target.id==="overlay"){closeModal();return;}
+  if(e.target.id==="overlay"){var md=$("#overlay .modal");if(md){md.classList.remove("nudge");void md.offsetWidth;md.classList.add("nudge");}return;} // clicking outside keeps the form open
   var a=e.target.closest("[data-act]"); if(!a) return;
   var id=a.dataset.id, act=a.dataset.act;
   if(ADMIN_ACTS.indexOf(act)>=0&&!isAdmin()){toast("Only admins can add or delete records");return;}
