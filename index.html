@@ -242,6 +242,8 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 .balcard .bar{height:8px;margin:10px 0}
 .bc-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;font-size:13px;font-variant-numeric:tabular-nums}
 .bc-row span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--steel-soft)}
+td.mono{white-space:nowrap}
+tr.clickrow{cursor:pointer}tr.clickrow:hover td{background:var(--surface-2)}
 tr.hl td{background:var(--accent-soft)}
 @media (max-width:560px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bc-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .vp-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--steel);font-weight:500;margin-bottom:6px}
@@ -583,7 +585,7 @@ function maybeNotify(alerts){
 }
 
 /* ================= STATE & RENDER ================= */
-var state = {view:"vehicles", q:"", ftype:"", ffuel:"", fstatus:"", svcTab:"periodic", repPreset:"6m", repFrom:"", repTo:"", repVeh:"", repGran:"", fuelQ:"", svcQ:"", fuelVeh:"", fuelMonth:"", fuelFund:"", fuelReq:"", fuelTab:"log", svcVeh:"", drawerId:null};
+var state = {view:"vehicles", vMode:(lsGet("fdc_vmode","cards")), q:"", ftype:"", ffuel:"", fstatus:"", svcTab:"periodic", repPreset:"6m", repFrom:"", repTo:"", repVeh:"", repGran:"", fuelQ:"", svcQ:"", fuelVeh:"", fuelMonth:"", fuelFund:"", fuelReq:"", fuelTab:"log", svcVeh:"", drawerId:null};
 var notifiedOnce=false;
 function render(){
   $$("#nav button").forEach(function(b){b.classList.toggle("on",b.dataset.view===state.view);});
@@ -617,7 +619,7 @@ function viewVehicles(alerts){
     if(state.ffuel&&v.fuelType!==state.ffuel) return false;
     if(state.fstatus&&(v.status||"Active")!==state.fstatus) return false;
     if(!q) return true;
-    return [v.plate,v.make,v.model,v.assignedTo,v.department,v.type,v.chassisNo].join(" ").toLowerCase().indexOf(q)>=0;
+    return [v.plate,v.make,v.model,v.assignedTo,v.department,v.type,v.chassisNo,v.tyreFront,v.tyreRear,v.tyreSpare,v.tyreBrand].join(" ").toLowerCase().indexOf(q)>=0;
   });
   var h='<div class="top"><div><h1>Vehicle Details</h1><p>All corporate vehicles, statutory documents and renewal dates.</p></div>'+
     '<button class="btn primary" data-act="addVehicle">+ Add Vehicle</button></div>'+
@@ -633,16 +635,23 @@ function viewVehicles(alerts){
     return '<li data-act="'+(a.reqId?"viewReq":"openVehicle")+'" data-id="'+esc(a.reqId||(a.v&&a.v.id))+'"><span class="dot '+a.st.k+'"></span><div class="what"><b class="mono">'+esc(a.vlabel||vLabel(a.v))+'</b> · '+esc(a.s.label)+' <span class="hint">('+esc(a.note||fmtDate(a.exp))+')</span></div><span class="pill '+a.st.k+'">'+esc(a.st.t)+'</span></li>';
   }).join("")+'</ul>';
   h+='</section>';
-  h+='<div class="toolbar"><input class="grow" type="search" placeholder="Search plate, make, model, driver…" value="'+esc(state.q)+'" data-bind="q">'+
+  h+='<div class="toolbar"><input class="grow" type="search" placeholder="Search plate, make, model, driver, tyre size…" value="'+esc(state.q)+'" data-bind="q">'+
     '<select data-bind="ftype">'+opts(VEHICLE_TYPES,state.ftype,"All types")+'</select>'+
     '<select data-bind="ffuel">'+opts(FUEL_TYPES,state.ffuel,"All fuel")+'</select>'+
-    '<select data-bind="fstatus">'+opts(STATUSES,state.fstatus,"All status")+'</select></div>';
+    '<select data-bind="fstatus">'+opts(STATUSES,state.fstatus,"All status")+'</select>'+
+    '<div class="tabs"><button data-act="vMode" data-m="cards" class="'+(state.vMode!=="list"?"on":"")+'">Cards</button><button data-act="vMode" data-m="list" class="'+(state.vMode==="list"?"on":"")+'">List &amp; tyres</button></div></div>';
   if(!vs.length) h+='<div class="panel"><div class="empty">No vehicles yet.<br><br><button class="btn primary" data-act="addVehicle">+ Add your first vehicle</button></div></div>';
   else if(!list.length) h+='<div class="panel"><div class="empty">No vehicles match these filters.</div></div>';
+  else if(state.vMode==="list") h+='<div class="panel"><div class="panel-h"><h2>All vehicles</h2><button class="btn sm" data-act="tyreCsv">Export CSV</button></div><div class="tablewrap"><table><thead><tr><th>Plate</th><th>Vehicle</th><th>Type</th><th>Fuel</th><th>Front tyre</th><th>Rear tyre</th><th>Spare</th><th>Pressure</th><th>Brand</th><th>Status</th></tr></thead><tbody>'+
+    list.map(function(v){return '<tr class="clickrow" data-act="openVehicle" data-id="'+esc(v.id)+'"><td class="mono"><b>'+esc(v.plate)+'</b></td><td>'+esc(vName(v)||"—")+(v.year?'<div class="sub">'+esc(v.year)+'</div>':"")+'</td><td>'+esc(v.type||"—")+'</td><td>'+esc(v.fuelType||"—")+'</td>'+
+      '<td class="mono">'+esc(v.tyreFront||"—")+'</td><td class="mono">'+esc(v.tyreRear||v.tyreFront||"—")+'</td><td class="mono">'+esc(v.tyreSpare||"—")+'</td><td>'+esc(psiText(v)||"—")+'</td><td>'+esc(v.tyreBrand||"—")+'</td><td><span class="pill">'+esc(v.status||"Active")+'</span></td></tr>';}).join("")+
+    '</tbody></table></div></div>';
   else h+='<div class="cards">'+list.map(vehicleCard).join("")+'</div>';
   return h;
 }
 function kpi(l,v,cls,s){return '<div class="kpi"><div class="l">'+l+'</div><div class="v '+(cls||"")+'">'+v+'</div><div class="s">'+(s||"")+'</div></div>';}
+function tyreText(v){var f=v.tyreFront||"",r=v.tyreRear||"";if(!f&&!r)return "";return (!r||r===f)?f:(f||"—")+" / "+r;}
+function psiText(v){var f=v.tyrePsiFront,r=v.tyrePsiRear;if(!f&&!r)return "";return (!r||r===f)?f+" PSI":(f||"—")+" / "+r+" PSI";}
 function vehicleCard(v){
   var stat=STATUTORY.map(function(s){var st=expiryState((v[s.key]||{}).expiry);return '<span class="pill '+st.k+'" title="'+esc(s.label+": "+st.t)+'"><span class="dot '+st.k+'"></span>'+esc(s.label)+'</span>';}).join("");
   return '<button class="vcard" data-act="openVehicle" data-id="'+esc(v.id)+'">'+
@@ -650,6 +659,7 @@ function vehicleCard(v){
     '<div class="vbody"><div class="row" style="justify-content:space-between"><span class="plate">'+esc(v.plate||"—")+'</span><span class="pill">'+esc(v.status||"Active")+'</span></div>'+
     '<div class="vname">'+esc(vName(v)||"—")+(v.year?" · "+esc(v.year):"")+'</div>'+
     '<div class="row"><span class="pill acc">'+esc(v.type||"—")+'</span>'+(v.fuelType?'<span class="pill">'+esc(v.fuelType)+'</span>':"")+(v.assignedTo?'<span class="hint">'+esc(v.assignedTo)+'</span>':"")+'</div>'+
+    (tyreText(v)?'<div class="hint">Tyres: <span class="mono">'+esc(tyreText(v))+'</span></div>':"")+
     '<div class="statline">'+stat+'</div></div></button>';
 }
 function typeIcon(t){
@@ -674,6 +684,8 @@ function renderDrawer(){
     spec("Type",v.type)+spec("Fuel type",v.fuelType)+spec("Status",v.status||"Active")+
     spec("Colour",v.color)+spec("Odometer",v.mileage?num(v.mileage).toLocaleString()+" km":"")+spec("Assigned to",v.assignedTo)+
     spec("Department",v.department)+spec("Chassis / hull no.",v.chassisNo)+spec("Engine no.",v.engineNo)+
+    spec("Front tyre",v.tyreFront)+spec("Rear tyre",v.tyreRear||v.tyreFront)+spec("Spare tyre",v.tyreSpare)+
+    spec("Tyre pressure",psiText(v))+spec("Tyre brand",v.tyreBrand)+
   '</div>'+
   (v.spFolder?'<a class="btn" href="'+esc(v.spFolder)+'" target="_blank" rel="noopener">Open SharePoint documents folder ↗</a>':'<div class="hint">No SharePoint folder linked — edit the vehicle to add one.</div>')+
   '<div class="statcard"><h3>Vehicle Registry</h3><div class="meta">'+
@@ -1099,6 +1111,14 @@ function vehicleForm(v){
     '<label>Status<select name="status">'+opts(STATUSES,v.status||"Active")+'</select></label>'+
     fld("Odometer (km / hrs)","mileage",v.mileage,"number")+
   '</div>'+
+  '<div class="fsec">Tyres</div><div class="grid g3">'+
+    fld("Front tyre size","tyreFront",v.tyreFront,"text","",' placeholder="e.g. 265/65 R17"')+
+    fld("Rear tyre size","tyreRear",v.tyreRear,"text","",' placeholder="Same as front if blank"')+
+    fld("Spare tyre size","tyreSpare",v.tyreSpare,"text","",' placeholder="e.g. 265/65 R17"')+
+    fld("Front pressure (PSI)","tyrePsiFront",v.tyrePsiFront,"number")+
+    fld("Rear pressure (PSI)","tyrePsiRear",v.tyrePsiRear,"number")+
+    fld("Tyre brand / model","tyreBrand",v.tyreBrand,"text","",' placeholder="e.g. Bridgestone Dueler"')+
+  '</div><div class="hint" style="margin-top:4px">Leave blank for speed boats or vehicles without tyres.</div>'+
   '<div class="fsec">Statutory documents · Microsoft SharePoint</div>'+
   '<label>SharePoint documents folder for this vehicle<div class="sp-row"><input type="text" inputmode="url" autocomplete="off" spellcheck="false" class="linkin" name="spFolder" placeholder="https://yourcompany.sharepoint.com/sites/…/Vehicles/P1234" value="'+esc(v.spFolder||"")+'"><button type="button" class="btn sm paste-btn" data-act="pasteLink" title="Paste link from clipboard">Paste</button>'+sp+'</div><span class="hint">Paste the link to the vehicle\'s folder. For each document below, paste its SharePoint "Copy link" URL.</span></label>'+
   '<div class="grid" style="margin-top:14px">'+
@@ -1258,12 +1278,12 @@ function openReqForm(id,preset){
     '<label><span><span id="reqRefLbl">'+(r.kind==="PR"?"PR no.":"Petty cash no.")+'</span> <span class="req">*</span></span><input name="refNo" value="'+esc(r.refNo||"")+'"></label>'+
     fld('Date <span class="req">*</span>',"date",r.date,"date")+
     fld('Total value ('+settings.currency+') <span class="req">*</span>',"amount",r.amount,"number")+
-    fld('Total litres <span class="req">*</span>',"litres",r.litres,"number")+
+    fld('Total litres <span class="hint">(optional)</span>',"litres",r.litres,"number","",' placeholder="Leave blank for no litre limit"')+
     fld("Document (SharePoint link)","docUrl",r.docUrl,"url")+
     '<label class="span2">Notes<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
     (id?'<div class="span2 hint">Used so far: <b>'+money(used)+'</b> / <b>'+fmtL(reqUsedL(r))+'</b> · Balance: <b>'+money(reqBalance(r))+'</b>'+(hasL(r)?' / <b>'+fmtL(reqBalanceL(r))+'</b>':"")+'</div>'+
       '<label class="span2" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="closed" style="width:auto"'+(r.closed?" checked":"")+'> Close this requisition (no more fuel can be charged to it)</label>':
-      '<div class="span2 hint">Each fuel entry charged to this requisition is deducted from the total value and the total litres. When either balance runs out, add a new requisition.</div>')+
+      '<div class="span2 hint">Each fuel entry charged to this requisition is deducted from the total value (and the total litres, if set). When the balance runs out, add a new requisition.</div>')+
     '</div>',{del:id?"delReq":null,submit:id?"Save changes":"Add requisition",wide:true});
   renderVehiclePicker();
 }
@@ -1274,13 +1294,14 @@ async function saveReq(form){
   var wrongFuel=o.vehicleIds.map(vehicleById).filter(function(v){return v&&v.fuelType&&v.fuelType!==o.fuelType;});
   if(wrongFuel.length){toast(wrongFuel.map(function(v){return v.plate;}).join(", ")+" use"+(wrongFuel.length===1?"s":"")+" "+wrongFuel[0].fuelType+", not "+o.fuelType);return;}
   if(!o.vehicleIds.length){toast("Select at least one vehicle");return;}
-  if(!o.vehicleId||!o.fuelType||!o.refNo||!o.date||!num(o.amount)||!num(o.litres)){toast("Type, vehicle, fuel type, ref no., date, value and litres are required");return;}
+  if(!o.vehicleId||!o.fuelType||!o.refNo||!o.date||!num(o.amount)){toast("Type, vehicle, fuel type, ref no., date and value are required");return;}
+  if(!num(o.litres)) o.litres="";
   var dup=Store.data.fuel_requisitions.find(function(x){return x.id!==id&&x.kind===o.kind&&String(x.refNo).toLowerCase()===o.refNo.toLowerCase();});
   if(dup){toast(fundShort(o.kind)+" "+o.refNo+" already exists");return;}
   if(id){
     var old=reqById(id), used=reqUsed(old);
     if(num(o.amount)<used){toast("Value can't be less than the amount already used ("+money(used)+")");return;}
-    var usedL=reqUsedL(old); if(num(o.litres)<usedL){toast("Litres can't be less than already used ("+fmtL(usedL)+")");return;}
+    var usedL=reqUsedL(old); if(num(o.litres)&&num(o.litres)<usedL){toast("Litres can't be less than already used ("+fmtL(usedL)+")");return;}
     var linked=Store.data.fuel_records.some(function(f){return f.requisitionId===id;});
     if(linked&&(o.fuelType!==old.fuelType||o.kind!==old.kind)){toast("This requisition already has fuel entries — fuel type and type can't change");return;}
     var charged=Store.data.fuel_records.filter(function(f){return f.requisitionId===id;}).map(function(f){return f.vehicleId;});
@@ -1604,6 +1625,11 @@ document.addEventListener("click",function(e){
       break;
     case "addFuel": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openFuelForm(null); break;
     case "editFuel": openFuelForm(id); break;
+    case "vMode": state.vMode=a.dataset.m; lsSet("fdc_vmode",state.vMode); render(); break;
+    case "tyreCsv":
+      var rows=[["Plate","Make","Model","Year","Type","Fuel","Front tyre","Rear tyre","Spare tyre","Front PSI","Rear PSI","Tyre brand","Status"]].concat(sortedVehicles().map(function(v){return [v.plate,v.make,v.model,v.year,v.type,v.fuelType,v.tyreFront,v.tyreRear||v.tyreFront,v.tyreSpare,v.tyrePsiFront,v.tyrePsiRear,v.tyreBrand,v.status||"Active"];}));
+      var csv=rows.map(function(r){return r.map(function(c){c=c==null?"":String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(",");}).join("\n");
+      var dl=document.createElement("a");dl.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));dl.download="fdc-vehicles-tyres.csv";document.body.appendChild(dl);dl.click();dl.remove();break;
     case "vpAll": ($("#vpick")._list||[]).forEach(function(v){if(modalCtx.sel.indexOf(v)<0)modalCtx.sel.push(v);}); renderVehiclePicker(); break;
     case "vpNone": modalCtx.sel=(modalCtx.locked||[]).filter(function(v,i,a){return a.indexOf(v)===i;}); renderVehiclePicker(); break;
     case "viewFuel": openFuelView(id); break;
