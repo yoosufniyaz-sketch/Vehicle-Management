@@ -232,7 +232,7 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 .scrim[hidden]{display:none}
 .steps{margin:0 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:8px}
 .dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px;font-size:14px}
-.dgrid span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--steel-soft);margin-bottom:2px}
+.dgrid>div>span:first-child{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--steel-soft);margin-bottom:2px}
 .balcard{border:1px solid var(--line);border-left:4px solid var(--good);border-radius:10px;padding:12px 14px;background:var(--surface-2)}
 .balcard.warn{border-left-color:var(--warn)}.balcard.crit{border-left-color:var(--critical);background:var(--critical-soft)}
 .bc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -244,6 +244,13 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 .bc-row span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--steel-soft)}
 tr.hl td{background:var(--accent-soft)}
 @media (max-width:560px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bc-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.vp-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--steel);font-weight:500;margin-bottom:6px}
+.vpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;max-height:260px;overflow:auto;border:1px solid var(--line-strong);border-radius:8px;padding:6px;background:var(--surface-2)}
+.vp-item{flex-direction:row;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);cursor:pointer;color:var(--ink);font-weight:400}
+.vp-item input{width:auto;margin:0}
+.vp-item .sub{display:block;color:var(--steel-soft);font-size:11.5px}
+.vp-item.on{border-color:var(--accent);background:var(--accent-soft)}
+.vp-item.mis{opacity:.7}
 .lightbox{position:fixed;inset:0;z-index:95;background:rgba(5,8,12,.92);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
 .lightbox[hidden]{display:none}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
@@ -558,10 +565,10 @@ function reqAlerts(){
     if(rq.closed) return;
     var st=reqStatus(rq), word=rq.kind==="PR"?"PR":"Petty cash";
     if(st.k==="crit"){
-      if(usableReqs(rq.vehicleId,rq.fuelType,rq.kind).length) return; // a new requisition already covers this vehicle
-      out.push({v:vehicleById(rq.vehicleId),reqId:rq.id,s:{label:word+" "+rq.refNo+" balance depleted"},note:"add a new "+(rq.kind==="PR"?"PR":"petty cash requisition"),st:{k:"crit",t:"Balance depleted",d:-1}});
+      if(reqVehs(rq).every(function(vid){return usableReqs(vid,rq.fuelType,rq.kind).length;})) return; // new requisitions already cover these vehicles
+      out.push({v:vehicleById(reqVehs(rq)[0]),vlabel:reqPlates(rq),reqId:rq.id,s:{label:word+" "+rq.refNo+" balance depleted"},note:"add a new "+(rq.kind==="PR"?"PR":"petty cash requisition"),st:{k:"crit",t:"Balance depleted",d:-1}});
     } else if(st.k==="warn"){
-      out.push({v:vehicleById(rq.vehicleId),reqId:rq.id,s:{label:word+" "+rq.refNo+" low balance"},note:money(Math.max(0,reqBalance(rq)))+(hasL(rq)?" · "+fmtL(Math.max(0,reqBalanceL(rq))):"")+" left",st:{k:"warn",t:"Low balance",d:1}});
+      out.push({v:vehicleById(reqVehs(rq)[0]),vlabel:reqPlates(rq),reqId:rq.id,s:{label:word+" "+rq.refNo+" low balance"},note:money(Math.max(0,reqBalance(rq)))+(hasL(rq)?" · "+fmtL(Math.max(0,reqBalanceL(rq))):"")+" left",st:{k:"warn",t:"Low balance",d:1}});
     }
   });
   return out;
@@ -623,7 +630,7 @@ function viewVehicles(alerts){
   h+='<section class="panel"><div class="panel-h"><h2>Needs attention</h2><span class="hint">Items expiring within '+settings.remindDays+' days or already expired</span></div>';
   if(!alerts.length) h+='<div class="empty">Nothing due. All statutory documents are valid.</div>';
   else h+='<ul class="alerts">'+alerts.map(function(a){
-    return '<li data-act="'+(a.reqId?"viewReq":"openVehicle")+'" data-id="'+esc(a.reqId||(a.v&&a.v.id))+'"><span class="dot '+a.st.k+'"></span><div class="what"><b class="mono">'+esc(vLabel(a.v))+'</b> · '+esc(a.s.label)+' <span class="hint">('+esc(a.note||fmtDate(a.exp))+')</span></div><span class="pill '+a.st.k+'">'+esc(a.st.t)+'</span></li>';
+    return '<li data-act="'+(a.reqId?"viewReq":"openVehicle")+'" data-id="'+esc(a.reqId||(a.v&&a.v.id))+'"><span class="dot '+a.st.k+'"></span><div class="what"><b class="mono">'+esc(a.vlabel||vLabel(a.v))+'</b> · '+esc(a.s.label)+' <span class="hint">('+esc(a.note||fmtDate(a.exp))+')</span></div><span class="pill '+a.st.k+'">'+esc(a.st.t)+'</span></li>';
   }).join("")+'</ul>';
   h+='</section>';
   h+='<div class="toolbar"><input class="grow" type="search" placeholder="Search plate, make, model, driver…" value="'+esc(state.q)+'" data-bind="q">'+
@@ -682,7 +689,7 @@ function renderDrawer(){
     '</div>';
   }).join("")+
   (v.notes?'<div class="mini"><h3>Notes</h3><div style="padding:10px 14px;white-space:pre-wrap">'+esc(v.notes)+'</div></div>':"")+
-  (function(){var rs=Store.data.fuel_requisitions.filter(function(r){return r.vehicleId===v.id&&!r.closed;}).sort(byDateDesc);
+  (function(){var rs=Store.data.fuel_requisitions.filter(function(r){return reqCovers(r,v.id)&&!r.closed;}).sort(byDateDesc);
     return '<div class="mini"><h3>Fuel funding (PR / Petty Cash)</h3>'+(rs.length?'<div class="tablewrap"><table><tr><th>Type</th><th>Ref no.</th><th>Fuel</th><th class="n">Value</th><th class="n">Balance</th><th class="n">Balance (L)</th><th>Status</th></tr>'+rs.map(function(rq){var st=reqStatus(rq);return '<tr><td>'+esc(fundShort(rq.kind))+'</td><td class="mono">'+esc(rq.refNo)+'</td><td>'+esc(rq.fuelType)+'</td><td class="n">'+money(rq.amount)+'</td><td class="n"><b>'+money(Math.max(0,reqBalance(rq)))+'</b>'+balBar(rq)+'</td><td class="n"><b>'+(hasL(rq)?fmtL(Math.max(0,reqBalanceL(rq))):"—")+'</b><div class="sub">of '+(hasL(rq)?fmtL(rq.litres):"—")+'</div></td><td><span class="pill '+st.k+'">'+st.t+'</span></td></tr>';}).join("")+'</table></div>':'<div class="empty">No active requisitions. <button class="linkbtn" data-act="addReqForVeh" data-id="'+esc(v.id)+'">Add PR / Petty Cash</button></div>')+'</div>';})()+
   '<div class="mini"><h3>Recent fueling</h3>'+(fuel.length?'<div class="tablewrap"><table><tr><th>Date</th><th class="n">Litres</th><th class="n">Cost</th><th class="n">Odometer</th></tr>'+fuel.slice(0,5).map(function(r){return '<tr><td>'+fmtDate(r.date)+'</td><td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+money(r.total)+'</td><td class="n">'+(r.odometer?num(r.odometer).toLocaleString():"—")+'</td></tr>';}).join("")+'</table></div>':'<div class="empty">No fuel entries.</div>')+'</div>'+
   '<div class="mini"><h3>Recent servicing</h3>'+(svc.length?'<div class="tablewrap"><table><tr><th>Date</th><th>Kind</th><th>Detail</th><th class="n">Cost</th></tr>'+svc.slice(0,6).map(function(r){var inc=r.kind==="incident";return '<tr><td>'+fmtDate(r.date)+'</td><td>'+(inc?'<span class="pill warn">Incidental</span>':'<span class="pill acc">Periodic</span>')+'</td><td>'+esc(inc?r.issue:(r.serviceType||r.type||""))+'</td><td class="n">'+(r.cost?money(r.cost):"—")+'</td></tr>';}).join("")+'</table></div>':'<div class="empty">No service records.</div>')+'</div>'+
@@ -701,12 +708,19 @@ function matchQ(q,parts){
 function vehWords(id){var v=vehicleById(id);return v?[v.plate,v.make,v.model,v.type,v.assignedTo,v.department]:[];}
 function dateWords(iso){return iso?[iso,fmtDate(iso)]:[];}
 function fuelHay(r){var rq=reqById(r.requisitionId);return vehWords(r.vehicleId).concat(dateWords(r.date),[r.fuelType,r.fundType,r.fundType==="Petty Cash"?"PC":"",rq&&rq.refNo,r.poNo,r.ref,r.station,r.filledBy,r.notes,num(r.total).toFixed(2),num(r.litres).toFixed(2)]);}
-function reqHay(rq){return vehWords(rq.vehicleId).concat(dateWords(rq.date),[rq.kind,rq.kind==="Petty Cash"?"PC":"",rq.refNo,rq.fuelType,rq.notes,reqStatus(rq).t,num(rq.amount).toFixed(2)]);}
+function reqHay(rq){return [].concat.apply([],reqVehs(rq).map(vehWords)).concat(dateWords(rq.date),[rq.kind,rq.kind==="Petty Cash"?"PC":"",rq.refNo,rq.fuelType,rq.notes,reqStatus(rq).t,num(rq.amount).toFixed(2)]);}
 function svcHay(r){return vehWords(r.vehicleId).concat(dateWords(r.date),[r.serviceType,r.type,r.vendor,r.notes,r.issue,r.status,r.reportedBy,r.odometer,num(r.cost).toFixed(2),r.nextDate?fmtDate(r.nextDate):""]);}
 
 /* ---------- Fuel requisitions (PR / Petty Cash) ---------- */
 var FUND_TYPES=[["PR","PR (Purchase Requisition)"],["Petty Cash","Petty Cash"]];
 function fundShort(k){return k==="PR"?"PR":"Petty Cash";}
+/* A requisition can cover several vehicles (shared balance). Older ones store a single vehicleId. */
+function reqVehs(rq){return (rq.vehicleIds&&rq.vehicleIds.length)?rq.vehicleIds:(rq.vehicleId?[rq.vehicleId]:[]);}
+function reqCovers(rq,vid){return reqVehs(rq).indexOf(vid)>=0;}
+function reqPlates(rq){return reqVehs(rq).map(function(id){return vLabel(vehicleById(id));}).join(", ");}
+function reqVehHtml(rq){var ids=reqVehs(rq);
+  if(ids.length===1){var v=vehicleById(ids[0]);return '<span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div>';}
+  return '<span class="pill acc">'+ids.length+' vehicles</span><div class="sub" style="max-width:220px">'+esc(reqPlates(rq))+'</div>';}
 function reqById(id){return Store.data.fuel_requisitions.find(function(r){return r.id===id;});}
 function reqUsed(rq,excludeFuelId){return Store.data.fuel_records.reduce(function(s,f){return f.requisitionId===rq.id&&f.id!==excludeFuelId?s+num(f.total):s;},0);}
 function reqBalance(rq,excludeFuelId){return Math.round((num(rq.amount)-reqUsed(rq,excludeFuelId))*100)/100;}
@@ -727,7 +741,7 @@ function reqLabel(rq){return (rq.kind==="PR"?"PR ":"PC ")+(rq.refNo||"—");}
 function usableReqs(vehicleId,fuelType,kind,excludeFuelId,keepId){
   return Store.data.fuel_requisitions.filter(function(rq){
     if(rq.id===keepId) return true;
-    return !rq.closed&&rq.vehicleId===vehicleId&&rq.fuelType===fuelType&&rq.kind===kind&&reqBalance(rq,excludeFuelId)>0&&(!hasL(rq)||reqBalanceL(rq,excludeFuelId)>0);
+    return !rq.closed&&reqCovers(rq,vehicleId)&&rq.fuelType===fuelType&&rq.kind===kind&&reqBalance(rq,excludeFuelId)>0&&(!hasL(rq)||reqBalanceL(rq,excludeFuelId)>0);
   }).sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""));});
 }
 function balBar(rq){
@@ -756,7 +770,7 @@ function viewFueling(){
   '</div>'+
   (function(){var ra=reqAlerts(); if(!ra.length) return "";
     return '<section class="panel"><div class="panel-h"><h2>Requisitions needing attention</h2><span class="hint">Depleted balances and balances under 20%</span></div><ul class="alerts">'+ra.map(function(a){
-      return '<li data-act="viewReq" data-id="'+esc(a.reqId)+'"><span class="dot '+a.st.k+'"></span><div class="what"><b class="mono">'+esc(vLabel(a.v))+'</b> · '+esc(a.s.label)+' <span class="hint">('+esc(a.note)+')</span></div><span class="pill '+a.st.k+'">'+esc(a.st.t)+'</span></li>';}).join("")+'</ul></section>';})()+
+      return '<li data-act="viewReq" data-id="'+esc(a.reqId)+'"><span class="dot '+a.st.k+'"></span><div class="what"><b class="mono">'+esc(a.vlabel||vLabel(a.v))+'</b> · '+esc(a.s.label)+' <span class="hint">('+esc(a.note)+')</span></div><span class="pill '+a.st.k+'">'+esc(a.st.t)+'</span></li>';}).join("")+'</ul></section>';})()+
   '<div class="toolbar"><div class="tabs"><button data-act="fuelTab" data-tab="log" class="'+(tab==="log"?"on":"")+'">Fuel log ('+all.length+')</button><button data-act="fuelTab" data-tab="req" class="'+(tab==="req"?"on":"")+'">Requisitions ('+reqs.length+')</button></div>'+
   '<input class="grow" type="search" data-bind="fuelQ" value="'+esc(state.fuelQ)+'" placeholder="'+(tab==="log"?"Search plate, PR / PO no., station, delivery note…":"Search PR / petty cash no., plate, notes…")+'" aria-label="Search fueling">'+
   '<select data-bind="fuelVeh">'+vehicleOpts(state.fuelVeh).replace("Select vehicle…","All vehicles")+'</select>'+
@@ -774,11 +788,11 @@ function viewFueling(){
       '</tbody></table>':'<div class="empty">'+(all.length?"No entries match these filters.":"No fuel entries yet. Add a PR or Petty Cash requisition for a vehicle first, then log fuel against it.")+'</div>')+'</div></div>';
   } else {
     h+='</div>';
-    var rl=reqs.filter(function(r){return matchQ(state.fuelQ,reqHay(r))&&(!state.fuelVeh||r.vehicleId===state.fuelVeh)&&(!state.fuelFund||r.kind===state.fuelFund);});
+    var rl=reqs.filter(function(r){return matchQ(state.fuelQ,reqHay(r))&&(!state.fuelVeh||reqCovers(r,state.fuelVeh))&&(!state.fuelFund||r.kind===state.fuelFund);});
     h+='<div class="panel"><div class="tablewrap">'+(rl.length?'<table><thead><tr><th>Type</th><th>Ref no.</th><th>Vehicle</th><th>Fuel</th><th>Date</th><th class="n">Value / Litres</th><th class="n">Used</th><th class="n">Balance</th><th>Status</th><th></th></tr></thead><tbody>'+
-      rl.map(function(rq){var v=vehicleById(rq.vehicleId),st=reqStatus(rq),n=Store.data.fuel_records.filter(function(f){return f.requisitionId===rq.id;}).length;
+      rl.map(function(rq){var st=reqStatus(rq),n=Store.data.fuel_records.filter(function(f){return f.requisitionId===rq.id;}).length;
         return '<tr><td><span class="pill '+(rq.kind==="PR"?"acc":"")+'">'+esc(fundShort(rq.kind))+'</span></td><td class="mono">'+esc(rq.refNo||"—")+(rq.docUrl?'<div class="sub">'+spLink(rq.docUrl,"Document")+'</div>':"")+'</td>'+
-        '<td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(rq.fuelType||"—")+'</td><td>'+fmtDate(rq.date)+'</td>'+
+        '<td>'+reqVehHtml(rq)+'</td><td>'+esc(rq.fuelType||"—")+'</td><td>'+fmtDate(rq.date)+'</td>'+
         '<td class="n">'+money(rq.amount)+'<div class="sub">'+(hasL(rq)?fmtL(rq.litres):"—")+'</div></td>'+
         '<td class="n">'+money(reqUsed(rq))+'<div class="sub">'+fmtL(reqUsedL(rq))+' · '+n+' fill'+(n===1?"":"s")+'</div></td>'+
         '<td class="n"><b>'+money(Math.max(0,reqBalance(rq)))+'</b><div><b>'+(hasL(rq)?fmtL(Math.max(0,reqBalanceL(rq))):'<span class="hint">no litre limit</span>')+'</b></div>'+balBar(rq)+'</td>'+
@@ -1165,16 +1179,19 @@ function dl(pairs){return '<div class="dgrid">'+pairs.map(function(p){return '<d
 function reqBalanceHtml(rq,highlightId){
   var st=reqStatus(rq), lim=hasL(rq), bal=reqBalance(rq), balL=lim?reqBalanceL(rq):0;
   var fills=Store.data.fuel_records.filter(function(f){return f.requisitionId===rq.id;}).sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))||(a.createdAt||0)-(b.createdAt||0);});
-  var runC=num(rq.amount), runL=num(rq.litres);
+  var runC=num(rq.amount), runL=num(rq.litres), multi=reqVehs(rq).length>1;
   var rows=fills.map(function(f){runC-=num(f.total);runL-=num(f.litres);
-    return '<tr'+(f.id===highlightId?' class="hl"':'')+'><td>'+fmtDate(f.date)+'</td><td>'+esc(f.poNo||"—")+'</td><td class="n">'+fmtL(f.litres)+'</td><td class="n">'+money(f.total)+'</td><td class="n"><b>'+money(runC)+'</b>'+(lim?'<div class="sub">'+fmtL(runL)+'</div>':"")+'</td></tr>';}).join("");
+    return '<tr'+(f.id===highlightId?' class="hl"':'')+'><td>'+fmtDate(f.date)+'</td>'+(multi?'<td class="mono">'+esc(vLabel(vehicleById(f.vehicleId)))+'</td>':'')+'<td>'+esc(f.poNo||"—")+'</td><td class="n">'+fmtL(f.litres)+'</td><td class="n">'+money(f.total)+'</td><td class="n"><b>'+money(runC)+'</b>'+(lim?'<div class="sub">'+fmtL(runL)+'</div>':"")+'</td></tr>';}).join("");
   return '<div class="balcard '+st.k+'"><div class="bc-top"><div><div class="bc-lbl">Remaining balance</div><div class="bc-big">'+money(Math.max(0,bal))+'</div>'+
       (lim?'<div class="bc-sub">'+fmtL(Math.max(0,balL))+' of '+fmtL(rq.litres)+' left</div>':'<div class="bc-sub">No litre limit set</div>')+'</div><span class="pill '+st.k+'">'+(st.k==="crit"?"Balance depleted":st.t)+'</span></div>'+
       balBar(rq)+
       '<div class="bc-row"><div><span>Value</span>'+money(rq.amount)+'</div><div><span>Used</span>'+money(reqUsed(rq))+'</div><div><span>Litres used</span>'+fmtL(reqUsedL(rq))+'</div><div><span>Fills</span>'+fills.length+'</div></div></div>'+
     (st.k==="crit"?'<div class="auth-msg" style="margin-top:10px">This '+(rq.kind==="PR"?"PR":"petty cash requisition")+' is used up. Add a new one to keep logging fuel for this vehicle.'+(isAdmin()?' <button type="button" class="linkbtn" data-act="newReqLike" data-id="'+esc(rq.id)+'">Add new '+(rq.kind==="PR"?"PR":"petty cash")+'</button>':' Ask an admin to add it.')+'</div>':"")+
+    (multi?'<div class="fsec">Usage by vehicle</div><div class="tablewrap"><table><thead><tr><th>Vehicle</th><th class="n">Fills</th><th class="n">Litres</th><th class="n">Cost</th><th class="n">Share</th></tr></thead><tbody>'+
+      reqVehs(rq).map(function(vid){var fs=fills.filter(function(f){return f.vehicleId===vid;}),c=sum(fs,"total"),u=reqUsed(rq),v=vehicleById(vid);
+        return '<tr><td><span class="mono">'+esc(vLabel(v))+'</span> <span class="sub">'+esc(vName(v))+'</span></td><td class="n">'+fs.length+'</td><td class="n">'+fmtL(sum(fs,"litres"))+'</td><td class="n">'+money(c)+'</td><td class="n">'+(u?(c/u*100).toFixed(0)+"%":"—")+'</td></tr>';}).join("")+'</tbody></table></div>':"")+
     '<div class="fsec">Fills charged to this '+(rq.kind==="PR"?"PR":"requisition")+'</div>'+
-    (fills.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>'+(rq.kind==="PR"?"PO no.":"Voucher no.")+'</th><th class="n">Litres</th><th class="n">Cost</th><th class="n">Balance after</th></tr></thead><tbody><tr><td colspan="4" class="hint">Opening value</td><td class="n">'+money(rq.amount)+(lim?'<div class="sub">'+fmtL(rq.litres)+'</div>':"")+'</td></tr>'+rows+'</tbody></table></div>':'<div class="hint">No fuel charged yet.</div>');
+    (fills.length?'<div class="tablewrap"><table><thead><tr><th>Date</th>'+(multi?'<th>Vehicle</th>':'')+'<th>'+(rq.kind==="PR"?"PO no.":"Voucher no.")+'</th><th class="n">Litres</th><th class="n">Cost</th><th class="n">Balance after</th></tr></thead><tbody><tr><td colspan="'+(multi?5:4)+'" class="hint">Opening value</td><td class="n">'+money(rq.amount)+(lim?'<div class="sub">'+fmtL(rq.litres)+'</div>':"")+'</td></tr>'+rows+'</tbody></table></div>':'<div class="hint">No fuel charged yet.</div>');
 }
 function openFuelView(id){
   var r=Store.data.fuel_records.find(function(x){return x.id===id;}); if(!r) return;
@@ -1190,35 +1207,54 @@ function openFuelView(id){
   openModal("Fuel entry · "+esc(vLabel(v))+" · "+fmtDate(r.date),body,{wide:true,submit:"Edit entry",noFocus:true,cancel:"Close"});
 }
 function openReqView(id){
-  var rq=reqById(id); if(!rq) return; var v=vehicleById(rq.vehicleId);
+  var rq=reqById(id); if(!rq) return;
   modalCtx={type:"viewReq",id:id};
   var body=dl([
       ["Type",rq.kind==="PR"?"PR (Purchase Requisition)":"Petty Cash"],[rq.kind==="PR"?"PR no.":"Petty cash no.",'<b>'+esc(rq.refNo)+'</b>',1],["Date",fmtDate(rq.date)],
-      ["Vehicle",'<b>'+esc(vLabel(v))+'</b><div class="sub">'+esc(vName(v))+'</div>',1],["Fuel type",rq.fuelType],["Document",rq.docUrl?spLink(rq.docUrl,"Open document"):"—",1]
+      [reqVehs(rq).length>1?"Vehicles ("+reqVehs(rq).length+")":"Vehicle",reqVehs(rq).map(function(id){var v=vehicleById(id);return '<div><b>'+esc(vLabel(v))+'</b> <span class="hint">'+esc(vName(v))+'</span></div>';}).join(""),1],["Fuel type",rq.fuelType],["Document",rq.docUrl?spLink(rq.docUrl,"Open document"):"—",1]
     ])+(rq.notes?'<div class="fsec">Notes</div><div style="white-space:pre-wrap">'+esc(rq.notes)+'</div>':"")+
     '<div class="fsec">Balance</div>'+reqBalanceHtml(rq);
   openModal((rq.kind==="PR"?"PR ":"Petty cash ")+esc(rq.refNo),body,{wide:true,submit:"Edit requisition",noFocus:true,cancel:"Close"});
 }
 function showDepleted(rq){
-  modalCtx={type:"depleted",pre:{vehicleId:rq.vehicleId,fuelType:rq.fuelType,kind:rq.kind}};
-  var word=rq.kind==="PR"?"PR":"petty cash requisition", v=vehicleById(rq.vehicleId);
+  modalCtx={type:"depleted",pre:{vehicleIds:reqVehs(rq),fuelType:rq.fuelType,kind:rq.kind}};
+  var word=rq.kind==="PR"?"PR":"petty cash requisition";
   openModal("⚠ "+(rq.kind==="PR"?"PR":"Petty cash")+" balance depleted",
-    '<p style="margin-top:0"><b>'+esc(rq.refNo)+'</b> for <b>'+esc(vLabel(v))+'</b> ('+esc(rq.fuelType)+') has no balance left. No more fuel can be charged to it.</p>'+
+    '<p style="margin-top:0"><b>'+esc(rq.refNo)+'</b> for <b>'+esc(reqPlates(rq))+'</b> ('+esc(rq.fuelType)+') has no balance left. No more fuel can be charged to it.</p>'+
     reqBalanceHtml(rq)+'<p class="hint">'+(isAdmin()?'Add a new '+word+' so fuel can be logged for this vehicle.':'Please ask an admin to add a new '+word+'.')+'</p>',
     {wide:true,submit:isAdmin()?"Add new "+(rq.kind==="PR"?"PR":"petty cash"):"OK",noFocus:true,cancel:"Later"});
+}
+
+/* ---------- Vehicle picker (checkbox list) for requisitions ---------- */
+function vpSelected(){return (modalCtx&&modalCtx.sel)||[];}
+function renderVehiclePicker(){
+  var box=$("#vpick"); if(!box||!modalCtx||!modalCtx.sel) return;
+  var f=$("#mform"), ft=f.fuelType.value, q=(($("#vpSearch")||{}).value||"").toLowerCase(), chosen=modalCtx.sel, locked=modalCtx.locked||[];
+  var list=sortedVehicles().filter(function(v){return !ft||v.fuelType===ft||chosen.indexOf(v.id)>=0;})
+    .filter(function(v){return !q||[v.plate,v.make,v.model,v.type,v.department].join(" ").toLowerCase().indexOf(q)>=0;});
+  box.innerHTML=list.length?list.map(function(v){var on=chosen.indexOf(v.id)>=0,lk=locked.indexOf(v.id)>=0,mis=ft&&v.fuelType!==ft;
+    return '<label class="vp-item'+(on?" on":"")+(mis?" mis":"")+'"><input type="checkbox" value="'+esc(v.id)+'"'+(on?" checked":"")+(lk?" disabled":"")+'>'+
+      '<span><b class="mono">'+esc(v.plate)+'</b><span class="sub">'+esc(vName(v)||v.type||"")+' · '+esc(v.fuelType||"—")+(lk?" · has fills":"")+(mis?" · different fuel type":"")+'</span></span></label>';}).join(""):
+    '<div class="hint" style="padding:8px">'+(ft?"No "+esc(ft)+" vehicles"+(q?" match the filter":"")+".":"Choose a fuel type first.")+'</div>';
+  $("#vpCount").textContent=chosen.length?"("+chosen.length+" selected)":"";
+  box._list=list.map(function(v){return v.id;});
 }
 
 /* ---------- Requisition form ---------- */
 function openReqForm(id,preset){
   var r=id?reqById(id):Object.assign({date:todayISO(),kind:"PR"},preset||{});
-  if(!id&&r.vehicleId&&!r.fuelType){var pv=vehicleById(r.vehicleId);if(pv)r.fuelType=pv.fuelType;}
+  var sel=reqVehs(r).filter(Boolean);
+  if(!id&&sel.length&&!r.fuelType){var pv=vehicleById(sel[0]);if(pv)r.fuelType=pv.fuelType;}
   var used=id?reqUsed(r):0;
-  modalCtx={type:"req",id:id};
+  modalCtx={type:"req",id:id,sel:sel.slice(),locked:id?Store.data.fuel_records.filter(function(f){return f.requisitionId===id;}).map(function(f){return f.vehicleId;}):[]};
   openModal(id?"Edit fuel requisition":"New fuel requisition",
     '<div class="grid g2">'+
     '<label class="span2"><span>Requisition type <span class="req">*</span></span><select name="kind" data-reqkind>'+opts(FUND_TYPES,r.kind)+'</select></label>'+
-    '<label class="span2"><span>Vehicle <span class="req">*</span></span><select name="vehicleId" data-reqveh>'+vehicleOpts(r.vehicleId)+'</select></label>'+
-    '<label><span>Fuel type <span class="req">*</span></span><select name="fuelType">'+opts(FUEL_TYPES,r.fuelType,"Select…")+'</select></label>'+
+    '<label><span>Fuel type <span class="req">*</span></span><select name="fuelType" data-reqfuel>'+opts(FUEL_TYPES,r.fuelType,"Select…")+'</select></label><div></div>'+
+    '<div class="span2"><div class="vp-head"><span>Vehicles <span class="req">*</span> <span class="hint" id="vpCount"></span></span>'+
+      '<span class="row" style="gap:8px"><input type="search" id="vpSearch" placeholder="Filter…" style="width:140px;padding:5px 8px"><button type="button" class="linkbtn" data-act="vpAll">Select all</button><button type="button" class="linkbtn" data-act="vpNone">Clear</button></span></div>'+
+      '<div class="vpick" id="vpick"></div>'+
+      '<div class="hint" style="margin-top:4px">All selected vehicles share this requisition\'s value and litres. Only vehicles using the chosen fuel type are listed.</div></div>'+
     '<label><span><span id="reqRefLbl">'+(r.kind==="PR"?"PR no.":"Petty cash no.")+'</span> <span class="req">*</span></span><input name="refNo" value="'+esc(r.refNo||"")+'"></label>'+
     fld('Date <span class="req">*</span>',"date",r.date,"date")+
     fld('Total value ('+settings.currency+') <span class="req">*</span>',"amount",r.amount,"number")+
@@ -1227,12 +1263,17 @@ function openReqForm(id,preset){
     '<label class="span2">Notes<textarea name="notes">'+esc(r.notes||"")+'</textarea></label>'+
     (id?'<div class="span2 hint">Used so far: <b>'+money(used)+'</b> / <b>'+fmtL(reqUsedL(r))+'</b> · Balance: <b>'+money(reqBalance(r))+'</b>'+(hasL(r)?' / <b>'+fmtL(reqBalanceL(r))+'</b>':"")+'</div>'+
       '<label class="span2" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="closed" style="width:auto"'+(r.closed?" checked":"")+'> Close this requisition (no more fuel can be charged to it)</label>':
-      '<div class="span2 hint">Each fuel entry charged to this requisition is deducted from the total value and the total litres. When either balance runs out, add a new requisition for the vehicle.</div>')+
-    '</div>',{del:id?"delReq":null,submit:id?"Save changes":"Add requisition"});
+      '<div class="span2 hint">Each fuel entry charged to this requisition is deducted from the total value and the total litres. When either balance runs out, add a new requisition.</div>')+
+    '</div>',{del:id?"delReq":null,submit:id?"Save changes":"Add requisition",wide:true});
+  renderVehiclePicker();
 }
 async function saveReq(form){
   var o=formToObj(form), id=modalCtx.id;
   o.closed=!!(form.closed&&form.closed.checked);
+  o.vehicleIds=vpSelected().filter(function(v,i,a){return a.indexOf(v)===i;}); o.vehicleId=o.vehicleIds[0]||"";
+  var wrongFuel=o.vehicleIds.map(vehicleById).filter(function(v){return v&&v.fuelType&&v.fuelType!==o.fuelType;});
+  if(wrongFuel.length){toast(wrongFuel.map(function(v){return v.plate;}).join(", ")+" use"+(wrongFuel.length===1?"s":"")+" "+wrongFuel[0].fuelType+", not "+o.fuelType);return;}
+  if(!o.vehicleIds.length){toast("Select at least one vehicle");return;}
   if(!o.vehicleId||!o.fuelType||!o.refNo||!o.date||!num(o.amount)||!num(o.litres)){toast("Type, vehicle, fuel type, ref no., date, value and litres are required");return;}
   var dup=Store.data.fuel_requisitions.find(function(x){return x.id!==id&&x.kind===o.kind&&String(x.refNo).toLowerCase()===o.refNo.toLowerCase();});
   if(dup){toast(fundShort(o.kind)+" "+o.refNo+" already exists");return;}
@@ -1241,7 +1282,10 @@ async function saveReq(form){
     if(num(o.amount)<used){toast("Value can't be less than the amount already used ("+money(used)+")");return;}
     var usedL=reqUsedL(old); if(num(o.litres)<usedL){toast("Litres can't be less than already used ("+fmtL(usedL)+")");return;}
     var linked=Store.data.fuel_records.some(function(f){return f.requisitionId===id;});
-    if(linked&&(o.vehicleId!==old.vehicleId||o.fuelType!==old.fuelType||o.kind!==old.kind)){toast("This requisition already has fuel entries — vehicle, fuel type and type can't change");return;}
+    if(linked&&(o.fuelType!==old.fuelType||o.kind!==old.kind)){toast("This requisition already has fuel entries — fuel type and type can't change");return;}
+    var charged=Store.data.fuel_records.filter(function(f){return f.requisitionId===id;}).map(function(f){return f.vehicleId;});
+    var removed=charged.filter(function(vid,i,a){return a.indexOf(vid)===i&&o.vehicleIds.indexOf(vid)<0;});
+    if(removed.length){toast(removed.map(function(x){return vLabel(vehicleById(x));}).join(", ")+" already has fills on this requisition and can't be removed");return;}
     o.id=id;
   }
   await Store.save("fuel_requisitions",o); closeModal(); state.view="fueling"; state.fuelTab="req"; render(); toast(id?"Requisition updated":"Requisition added");
@@ -1277,7 +1321,7 @@ function refreshReqSelect(pick){
   var f=$("#mform"); if(!f||!modalCtx||modalCtx.type!=="fuel") return;
   var kind=f.fundType.value, sel=f.requisitionId, cur=pick!==undefined?pick:sel.value;
   $("#poLbl").textContent=kind==="PR"?"PO no.":"Petty cash voucher no.";
-  var keep=(modalCtx.keepReq&&reqById(modalCtx.keepReq)&&reqById(modalCtx.keepReq).kind===kind&&reqById(modalCtx.keepReq).vehicleId===f.vehicleId.value)?modalCtx.keepReq:null;
+  var keep=(modalCtx.keepReq&&reqById(modalCtx.keepReq)&&reqById(modalCtx.keepReq).kind===kind&&reqCovers(reqById(modalCtx.keepReq),f.vehicleId.value))?modalCtx.keepReq:null;
   var list=(f.vehicleId.value&&f.fuelType.value)?usableReqs(f.vehicleId.value,f.fuelType.value,kind,modalCtx.id,keep):[];
   sel.innerHTML=list.length?list.map(function(rq){return '<option value="'+esc(rq.id)+'">'+esc(rq.refNo)+' — bal. '+esc(money(reqBalance(rq,modalCtx.id)))+(hasL(rq)?' · '+esc(fmtL(reqBalanceL(rq,modalCtx.id))):"")+'</option>';}).join(""):'<option value="">None available</option>';
   if(cur&&list.some(function(x){return x.id===cur;})) sel.value=cur;
@@ -1304,7 +1348,7 @@ async function saveFuel(form){
   if(!o.vehicleId||!o.fuelType||!o.date||!num(o.litres)||!num(o.total)){toast("Vehicle, fuel type, date, litres and total are required");return;}
   var rq=reqById(o.requisitionId);
   if(!rq){toast("Select a "+(o.fundType==="PR"?"PR":"petty cash")+" requisition with balance for this vehicle");return;}
-  if(rq.vehicleId!==o.vehicleId||rq.fuelType!==o.fuelType||rq.kind!==o.fundType){toast("Requisition does not match the vehicle / fuel type");return;}
+  if(!reqCovers(rq,o.vehicleId)||rq.fuelType!==o.fuelType||rq.kind!==o.fundType){toast("Requisition does not match the vehicle / fuel type");return;}
   var bal=reqBalance(rq,id);
   if(num(o.total)>bal+0.001){toast("Exceeds available balance of "+money(bal)+" on "+reqLabel(rq));return;}
   var balL=hasL(rq)?reqBalanceL(rq,id):null;
@@ -1506,6 +1550,7 @@ document.addEventListener("input",function(e){
     var h=t.parentNode.querySelector("[data-date]"); if(t.value) setDateVal(h,t.value);
   }
 },true);
+document.addEventListener("input",function(e){if(e.target.id==="vpSearch")renderVehiclePicker();});
 document.addEventListener("focusout",function(e){
   var t=e.target; if(!t.classList||!t.classList.contains("dtext")) return;
   var v=t.value.trim(); if(!v){t.classList.remove("bad");return;}
@@ -1559,9 +1604,11 @@ document.addEventListener("click",function(e){
       break;
     case "addFuel": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openFuelForm(null); break;
     case "editFuel": openFuelForm(id); break;
+    case "vpAll": ($("#vpick")._list||[]).forEach(function(v){if(modalCtx.sel.indexOf(v)<0)modalCtx.sel.push(v);}); renderVehiclePicker(); break;
+    case "vpNone": modalCtx.sel=(modalCtx.locked||[]).filter(function(v,i,a){return a.indexOf(v)===i;}); renderVehiclePicker(); break;
     case "viewFuel": openFuelView(id); break;
     case "viewReq": closeModal(); openReqView(id); break;
-    case "newReqLike": var sr=reqById(id); closeModal(); openReqForm(null,{vehicleId:sr.vehicleId,fuelType:sr.fuelType,kind:sr.kind}); break;
+    case "newReqLike": var sr=reqById(id); closeModal(); openReqForm(null,{vehicleIds:reqVehs(sr),fuelType:sr.fuelType,kind:sr.kind}); break;
     case "addReqForVeh": closeDrawer(); openReqForm(null,{vehicleId:id}); break;
     case "addReq": if(!Store.data.vehicles.length){toast("Add a vehicle first");break;} openReqForm(null,{vehicleId:state.fuelVeh||""}); break;
     case "editReq": openReqForm(id); break;
@@ -1608,6 +1655,8 @@ document.addEventListener("change",async function(e){
   }
   if(t.hasAttribute("data-dur-end")){var fs2=t.closest("fieldset");fs2.querySelector("[data-dur]").value="";}
   if(t.hasAttribute("data-fuelveh")||t.hasAttribute("data-reqveh")){var v=vehicleById(t.value);if(v&&v.fuelType)t.form.fuelType.value=v.fuelType;}
+  if(t.closest&&t.closest("#vpick")&&modalCtx&&modalCtx.sel){var ix=modalCtx.sel.indexOf(t.value);if(t.checked&&ix<0)modalCtx.sel.push(t.value);if(!t.checked&&ix>=0)modalCtx.sel.splice(ix,1);renderVehiclePicker();}
+  if(t.hasAttribute("data-reqfuel")&&modalCtx&&modalCtx.sel){var lk=modalCtx.locked||[];modalCtx.sel=modalCtx.sel.filter(function(id){var v=vehicleById(id);return lk.indexOf(id)>=0||!t.value||!v||v.fuelType===t.value;});renderVehiclePicker();}
   if(t.hasAttribute("data-reqkind")) $("#reqRefLbl").textContent=t.value==="PR"?"PR no.":"Petty cash no.";
   if(modalCtx&&modalCtx.type==="fuel"&&["vehicleId","fuelType","fundType"].indexOf(t.name)>=0) refreshReqSelect();
   if(modalCtx&&modalCtx.type==="fuel"&&t.name==="requisitionId") updateReqInfo();
