@@ -244,6 +244,7 @@ legend{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.0
 .bc-row span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--steel-soft)}
 td.mono{white-space:nowrap}
 tr.clickrow{cursor:pointer}tr.clickrow:hover td{background:var(--surface-2)}
+input.calc{background:var(--accent-soft);border-color:var(--accent)}
 tr.hl td{background:var(--accent-soft)}
 @media (max-width:560px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bc-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .vp-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--steel);font-weight:500;margin-bottom:6px}
@@ -525,7 +526,7 @@ function fld(label,name,val,type,cls,extra){
   type=type||"text";
   if(type==="date") return '<label class="'+(cls||"")+'"><span>'+label+'</span>'+dateField(name,val,extra)+'</label>';
   if(type==="url") return '<label class="'+(cls||"")+'"><span>'+label+'</span><div class="sp-row"><input type="text" inputmode="url" autocomplete="off" spellcheck="false" class="linkin" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(extra||"")+'><button type="button" class="btn sm paste-btn" data-act="pasteLink" title="Paste link from clipboard">Paste</button></div></label>';
-  return '<label class="'+(cls||"")+'"><span>'+label+'</span><input type="'+type+'" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(type==="number"?' step="0.01" min="0"':"")+(extra||"")+'></label>';
+  return '<label class="'+(cls||"")+'"><span>'+label+'</span><input type="'+type+'" name="'+name+'" value="'+esc(val==null?"":val)+'"'+(type==="number"?' step="any" min="0" inputmode="decimal"':"")+(extra||"")+'></label>';
 }
 function formToObj(form){
   var o={};
@@ -1312,6 +1313,23 @@ async function saveReq(form){
   await Store.save("fuel_requisitions",o); closeModal(); state.view="fueling"; state.fuelTab="req"; render(); toast(id?"Requisition updated":"Requisition added");
 }
 
+/* ---------- Litres × rate = total: fill in whichever of the three you didn't type ---------- */
+function fuelCalc(f,changed){
+  if(!modalCtx) return;
+  var names=["litres","rate","total"], ord=modalCtx.calcOrder||[];
+  ord=[changed].concat(ord.filter(function(n){return n!==changed;}));
+  // if only one field has been typed, pair it with another field that already has a value
+  if(ord.length<2){var other=["rate","litres","total"].filter(function(n){return n!==changed&&num(f[n].value)>0;})[0];if(other)ord.push(other);}
+  ord=ord.slice(0,2); modalCtx.calcOrder=ord;
+  var target=names.filter(function(n){return ord.indexOf(n)<0;})[0]; if(!target) return;
+  var L=num(f.litres.value),R=num(f.rate.value),T=num(f.total.value),out=null;
+  if(target==="total"&&L>0&&R>0) out=(L*R).toFixed(2);
+  if(target==="litres"&&T>0&&R>0) out=(T/R).toFixed(2);
+  if(target==="rate"&&T>0&&L>0) out=(T/L).toFixed(3);
+  names.forEach(function(n){f[n].classList.toggle("calc",n===target&&out!==null);});
+  if(out!==null){f[target].value=out;var lbl={litres:"Litres",rate:"Rate per litre",total:"Total cost"}[target];var h=$("#calcHint");if(h)h.textContent=lbl+" calculated automatically from the other two.";}
+}
+
 /* ---------- Fuel form ---------- */
 function openFuelForm(id){
   var r=id?Store.data.fuel_records.find(function(x){return x.id===id;}):{date:todayISO(),fundType:"PR",vehicleId:state.fuelVeh||""};
@@ -1328,9 +1346,10 @@ function openFuelForm(id){
       '<div class="span2" id="reqInfo"></div>'+
       '<label class="span2"><span id="poLbl">PO no.</span><input name="poNo" value="'+esc(r.poNo||r.ref||"")+'"></label>'+
     '</div></fieldset>'+
+    '<div class="span2 hint" id="calcHint">Enter any two of litres, rate and total cost — the third is calculated.</div>'+
     fld('Litres <span class="req">*</span>',"litres",r.litres,"number","",' data-calc')+
     fld("Rate per litre ("+settings.currency+")","rate",r.rate,"number","",' data-calc')+
-    fld('Total cost ('+settings.currency+') <span class="req">*</span>',"total",r.total,"number","",' data-reqamt')+
+    fld('Total cost ('+settings.currency+') <span class="req">*</span>',"total",r.total,"number","",' data-calc')+
     fld("Odometer (km / hrs)","odometer",r.odometer,"number")+
     fld("Fuel station","station",r.station)+fld("Delivery note no.","ref",r.poNo?r.ref:"")+
     fld("Filled by","filledBy",r.filledBy||userName)+fld("Delivery note (SharePoint link)","docUrl",r.docUrl,"url")+
@@ -1659,7 +1678,7 @@ document.addEventListener("click",function(e){
 document.addEventListener("input",function(e){
   var b=e.target.dataset&&e.target.dataset.bind;
   if(b&&e.target.type==="search"){state[b]=e.target.value;var pos=e.target.selectionStart;render();var s=$('[data-bind="'+b+'"]');s.focus();s.setSelectionRange(pos,pos);}
-  if(e.target.hasAttribute&&e.target.hasAttribute("data-calc")){var f=e.target.form,L=num(f.litres.value),R=num(f.rate.value);if(L&&R)f.total.value=(L*R).toFixed(2);}
+  if(e.target.hasAttribute&&e.target.hasAttribute("data-calc")) fuelCalc(e.target.form,e.target.name);
   if(modalCtx&&modalCtx.type==="fuel"&&e.target.form&&["litres","rate","total"].indexOf(e.target.name)>=0) updateReqInfo();
 });
 document.addEventListener("change",async function(e){
