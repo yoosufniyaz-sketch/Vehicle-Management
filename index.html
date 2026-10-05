@@ -800,7 +800,7 @@ function viewFueling(){
     if(state.fuelReq){var fr=reqById(state.fuelReq);h+='<div class="row" style="margin:-4px 0 12px"><span class="pill acc">Showing entries for '+esc(fr?reqLabel(fr):"requisition")+'</span><button class="linkbtn" data-act="clearReqFilter">Show all</button></div>';}
     h+='<div class="panel"><div class="tablewrap">'+(list.length?'<table><thead><tr><th>Date</th><th>Vehicle</th><th>Fuel</th><th>Funding</th><th class="n">Litres</th><th class="n">Rate</th><th class="n">Total</th><th>Station</th><th></th></tr></thead><tbody>'+
       list.map(function(r){var v=vehicleById(r.vehicleId),rq=reqById(r.requisitionId);return '<tr><td>'+fmtDate(r.date)+'</td><td><span class="mono">'+esc(vLabel(v))+'</span><div class="sub">'+esc(vName(v))+'</div></td><td>'+esc(r.fuelType||"—")+'</td>'+
-        '<td>'+(r.fundType?'<span class="pill '+(r.fundType==="PR"?"acc":"")+'">'+esc(fundShort(r.fundType))+'</span> <span class="mono fund-ref" style="font-size:12.5px">'+esc(rq?rq.refNo:"")+'</span><div class="sub">'+(r.poNo?(r.fundType==="PR"?"PO ":"Voucher ")+esc(r.poNo):"")+'</div>':'<span class="hint">—</span>')+'</td>'+
+        '<td>'+(r.fundType?'<span class="pill '+(r.fundType==="PR"?"acc":"")+'">'+esc(fundShort(r.fundType))+'</span> <span class="mono fund-ref" style="font-size:12.5px">'+esc(rq?rq.refNo:"")+'</span><div class="sub">'+(r.poNo||r.poUrl?(r.fundType==="PR"?"PO ":"Voucher ")+(r.poUrl?'<a href="'+esc(r.poUrl)+'" target="_blank" rel="noopener" title="Open document">'+esc(r.poNo||"document")+' ↗</a>':esc(r.poNo)):"")+'</div>':'<span class="hint">—</span>')+'</td>'+
         '<td class="n">'+num(r.litres).toFixed(2)+'</td><td class="n">'+(r.rate?money(r.rate):"—")+'</td><td class="n"><b>'+money(r.total)+'</b></td><td>'+esc(r.station||"—")+(r.ref?'<div class="sub">DN '+esc(r.ref)+'</div>':"")+'</td><td class="n"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="viewFuel" data-id="'+esc(r.id)+'">View</button><button class="btn sm" data-act="editFuel" data-id="'+esc(r.id)+'">Edit</button></div></td></tr>';}).join("")+
       '<tr class="tot"><td colspan="4"><b>Total</b> <span class="hint">('+list.length+' entries)</span></td><td class="n"><b>'+sum(list,"litres").toFixed(2)+'</b></td><td></td><td class="n"><b>'+money(sum(list,"total"))+'</b></td><td colspan="2"></td></tr>'+
       '</tbody></table>':'<div class="empty">'+(all.length?"No entries match these filters.":"No fuel entries yet. Add a PR or Petty Cash requisition for a vehicle first, then log fuel against it.")+'</div>')+'</div></div>';
@@ -1207,7 +1207,7 @@ function reqBalanceHtml(rq,highlightId){
   var fills=Store.data.fuel_records.filter(function(f){return f.requisitionId===rq.id;}).sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))||(a.createdAt||0)-(b.createdAt||0);});
   var runC=num(rq.amount), runL=num(rq.litres), multi=reqVehs(rq).length>1;
   var rows=fills.map(function(f){runC-=num(f.total);runL-=num(f.litres);
-    return '<tr'+(f.id===highlightId?' class="hl"':'')+'><td>'+fmtDate(f.date)+'</td>'+(multi?'<td class="mono">'+esc(vLabel(vehicleById(f.vehicleId)))+'</td>':'')+'<td>'+esc(f.poNo||"—")+'</td><td class="n">'+fmtL(f.litres)+'</td><td class="n">'+money(f.total)+'</td><td class="n"><b>'+money(runC)+'</b>'+(lim?'<div class="sub">'+fmtL(runL)+'</div>':"")+'</td></tr>';}).join("");
+    return '<tr'+(f.id===highlightId?' class="hl"':'')+'><td>'+fmtDate(f.date)+'</td>'+(multi?'<td class="mono">'+esc(vLabel(vehicleById(f.vehicleId)))+'</td>':'')+'<td>'+(f.poUrl?'<a href="'+esc(f.poUrl)+'" target="_blank" rel="noopener">'+esc(f.poNo||"document")+' ↗</a>':esc(f.poNo||"—"))+'</td><td class="n">'+fmtL(f.litres)+'</td><td class="n">'+money(f.total)+'</td><td class="n"><b>'+money(runC)+'</b>'+(lim?'<div class="sub">'+fmtL(runL)+'</div>':"")+'</td></tr>';}).join("");
   return '<div class="balcard '+st.k+'"><div class="bc-top"><div><div class="bc-lbl">Remaining balance</div><div class="bc-big">'+money(Math.max(0,bal))+'</div>'+
       (lim?'<div class="bc-sub">'+fmtL(Math.max(0,balL))+' of '+fmtL(rq.litres)+' left</div>':'<div class="bc-sub">No litre limit set</div>')+'</div><span class="pill '+st.k+'">'+(st.k==="crit"?"Balance depleted":st.t)+'</span></div>'+
       balBar(rq)+
@@ -1227,7 +1227,7 @@ function openFuelView(id){
       ["Date",fmtDate(r.date)],["Vehicle",'<b>'+esc(vLabel(v))+'</b><div class="sub">'+esc(vName(v))+'</div>',1],["Fuel type",r.fuelType],
       ["Litres",fmtL(r.litres)],["Rate per litre",r.rate?money(r.rate):"—"],["Total cost",'<b>'+money(r.total)+'</b>',1],
       ["Fuel station",r.station],["Filled by",r.filledBy],
-      [r.fundType==="Petty Cash"?"Voucher no.":"PO no.",r.poNo],["Delivery note no.",r.ref],["Delivery note",r.docUrl?spLink(r.docUrl,"Open delivery note"):"—",1]
+      [r.fundType==="Petty Cash"?"Voucher no.":"PO no.",r.poNo],[r.fundType==="Petty Cash"?"Voucher document":"Purchase order",r.poUrl?spLink(r.poUrl,r.fundType==="Petty Cash"?"Open voucher":"Open purchase order"):"—",1],["Delivery note no.",r.ref],["Delivery note",r.docUrl?spLink(r.docUrl,"Open delivery note"):"—",1]
     ])+(r.notes?'<div class="fsec">Notes</div><div style="white-space:pre-wrap">'+esc(r.notes)+'</div>':"")+
     (rq?'<div class="fsec">'+(rq.kind==="PR"?"PR":"Petty cash")+' '+esc(rq.refNo)+'</div>'+reqBalanceHtml(rq,r.id):'<div class="fsec">Funding</div><div class="hint">Not charged to a PR or petty cash requisition.</div>');
   openModal("Fuel entry · "+esc(vLabel(v))+" · "+fmtDate(r.date),body,{wide:true,submit:isAdmin()?"Edit entry":false,noFocus:true,cancel:"Close"});
@@ -1349,7 +1349,8 @@ function openFuelForm(id){
       '<label><span>Charge to <span class="req">*</span></span><select name="fundType">'+opts(FUND_TYPES,r.fundType||"PR")+'</select></label>'+
       '<label><span>Requisition <span class="req">*</span></span><select name="requisitionId" id="reqSel"></select></label>'+
       '<div class="span2" id="reqInfo"></div>'+
-      '<label class="span2"><span id="poLbl">PO no.</span><input name="poNo" value="'+esc(r.poNo||r.ref||"")+'"></label>'+
+      '<label><span id="poLbl">PO no.</span><input name="poNo" value="'+esc(r.poNo||r.ref||"")+'"></label>'+
+      fld('<span id="poUrlLbl">Purchase order (SharePoint link)</span>',"poUrl",r.poUrl,"url")+
     '</div></fieldset>'+
     '<div class="span2 hint" id="calcHint">Enter any two of litres, rate and total cost — the third is calculated.</div>'+
     fld('Litres <span class="req">*</span>',"litres",r.litres,"number","",' data-calc')+
@@ -1366,6 +1367,7 @@ function refreshReqSelect(pick){
   var f=$("#mform"); if(!f||!modalCtx||modalCtx.type!=="fuel") return;
   var kind=f.fundType.value, sel=f.requisitionId, cur=pick!==undefined?pick:sel.value;
   $("#poLbl").textContent=kind==="PR"?"PO no.":"Petty cash voucher no.";
+  if($("#poUrlLbl")) $("#poUrlLbl").textContent=kind==="PR"?"Purchase order (SharePoint link)":"Petty cash voucher (SharePoint link)";
   var keep=(modalCtx.keepReq&&reqById(modalCtx.keepReq)&&reqById(modalCtx.keepReq).kind===kind&&reqCovers(reqById(modalCtx.keepReq),f.vehicleId.value))?modalCtx.keepReq:null;
   var list=(f.vehicleId.value&&f.fuelType.value)?usableReqs(f.vehicleId.value,f.fuelType.value,kind,modalCtx.id,keep):[];
   sel.innerHTML=list.length?list.map(function(rq){return '<option value="'+esc(rq.id)+'">'+esc(rq.refNo)+' — bal. '+esc(money(reqBalance(rq,modalCtx.id)))+(hasL(rq)?' · '+esc(fmtL(reqBalanceL(rq,modalCtx.id))):"")+'</option>';}).join(""):'<option value="">None available</option>';
